@@ -1,0 +1,44 @@
+; Engine configuration file.
+; Spidey Remake 2010 - Godot 4 track (see ../GODOT_TRACK.txt)
+; Target: Godot 4.7.x, Windows x64, GL Compatibility renderer.
+
+config_version=5
+
+[application]
+
+config/name="Spidey Remake 2010"
+config/description="Non-commercial learning remake of Spider-Man (2000), rebuilt level-by-level on Godot 4."
+run/main_scene="res://ui/main_menu.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+boot_splash/bg_color=Color(0.05, 0.05, 0.08, 1)
+
+[autoload]
+
+Game="*res://autoload/game.gd"
+Sfx="*res://autoload/sfx.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/resizable=true
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[layer_names]
+
+3d_physics/layer_1="World"
+3d_physics/layer_2="Player"
+3d_physics/layer_3="Enemy"
+3d_physics/layer_4="Interact"
+3d_physics/layer_5="FX"
+
+[physics]
+
+3d/default_gravity=22.0
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.05, 0.05, 0.08, 1)

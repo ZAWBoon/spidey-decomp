@@ -1,0 +1,91 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ui/main_menu.gd" id="1"]
+
+[node name="MainMenu" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="BG" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.05, 0.09, 1)
+
+[node name="Center" type="CenterContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Menu" type="VBoxContainer" parent="Center"]
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Center/Menu"]
+theme_override_colors/font_color = Color(0.9, 0.12, 0.16, 1)
+theme_override_font_sizes/font_size = 72
+text = "SPIDEY REMAKE"
+horizontal_alignment = 1
+
+[node name="Sub" type="Label" parent="Center/Menu"]
+theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 1)
+theme_override_font_sizes/font_size = 20
+text = "2010-era fan learning project - Godot 4"
+horizontal_alignment = 1
+
+[node name="Gap" type="Control" parent="Center/Menu"]
+custom_minimum_size = Vector2(0, 16)
+
+[node name="BtnTraining" type="Button" parent="Center/Menu"]
+custom_minimum_size = Vector2(340, 52)
+theme_override_font_sizes/font_size = 24
+text = "TRAINING"
+
+[node name="BtnBank" type="Button" parent="Center/Menu"]
+custom_minimum_size = Vector2(340, 52)
+theme_override_font_sizes/font_size = 24
+text = "LEVEL 1: BANK"
+
+[node name="BtnDocks" type="Button" parent="Center/Menu"]
+custom_minimum_size = Vector2(340, 52)
+theme_override_font_sizes/font_size = 24
+text = "LEVEL 2: DOCKS"
+
+[node name="BtnBugle" type="Button" parent="Center/Menu"]
+custom_minimum_size = Vector2(340, 52)
+theme_override_font_sizes/font_size = 24
+text = "LEVEL 3: BUGLE"
+
+[node name="BtnStreets" type="Button" parent="Center/Menu"]
+custom_minimum_size = Vector2(340, 52)
+theme_override_font_sizes/font_size = 24
+text = "LEVEL 4: STREETS"
+
+[node name="BtnRoofs" type="Button" parent="Center/Menu"]
+custom_minimum_size = Vector2(340, 52)
+theme_override_font_sizes/font_size = 24
+text = "LEVEL 5: ROOFS"
+
+[node name="BtnTheater" type="Button" parent="Center/Menu"]
+custom_minimum_size = Vector2(340, 52)
+theme_override_font_sizes/font_size = 24
+text = "LEVEL 6: THEATER"
+
+[node name="BtnQuit" type="Button" parent="Center/Menu"]
+custom_minimum_size = Vector2(340, 52)
+theme_override_font_sizes/font_size = 24
+text = "QUIT"
+
+[node name="Gap2" type="Control" parent="Center/Menu"]
+custom_minimum_size = Vector2(0, 16)
+
+[node name="Controls" type="Label" parent="Center/Menu"]
+theme_override_colors/font_color = Color(0.6, 0.65, 0.75, 1)
+theme_override_font_sizes/font_size = 16
+text = "WASD move - SPACE jump - LMB punch - RMB web - F swing (hold) - E use - ESC pause"
+horizontal_alignment = 1
+autowrap_mode = 2

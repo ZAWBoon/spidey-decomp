@@ -1,0 +1,6 @@
+{
+  "name": "spidey-remake",
+  "version": "0.0.1",
+  "description": "Spidey 2010-era PC remake (learning project). Deps grow per milestone.",
+  "dependencies": []
+}

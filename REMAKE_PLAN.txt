@@ -1,0 +1,166 @@
+================================================================
+ SPIDEY REMAKE - LOCKED PLAN (PC / Windows x64 / 2010-era target)
+================================================================
+PIVOT 2026-09-16: the ACTIVE track is Godot 4 (see GODOT_TRACK.txt and
+the godot/ folder). This native-D3D11 plan is preserved as reference.
+Status : APPROVED DIRECTION (non-commercial, learning project)
+Target : Same game & levels, 2010-era quality (CoD:MW2/BlackOps ref)
+Date   : 2026-09-16
+================================================================
+
+1. LOCKED DECISIONS (do not revisit without reason)
+----------------------------------------------------------------
+- Platform      : PC only. Primary: Windows 10/11 x64.
+                  Linux = best-effort bonus (same code via SDL3).
+- Language      : C++17 now, C++20 later. No VS6 code in remake/.
+- Graphics API  : Direct3D 11 + HLSL (2010-authentic, best documented,
+                  perfect for learning; GTX 1060-class runs it easily).
+- Windowing/Input/Gamepad : SDL3 (window, keyboard, mouse, gamepad
+                  hotplug, rumble, timers). Renderer stays native D3D11.
+- Audio         : miniaudio (3D positional + reverb). XAudio2 optional later.
+- Dev UI        : Dear ImGui (docking) for asset viewer / debug tools.
+- Game UI       : custom HUD/menus (HD redraw, same identity).
+- Build         : CMake 3.20+ + vcpkg manifest mode + Visual Studio 2022.
+- Deps policy   : vcpkg.json manifest. No vendored SDKs in repo.
+- Coexistence   : old matching-decomp build (VS6/DX7) is UNTOUCHED.
+                  All remake work lives in remake/ + #ifdef SPIDEY_REMAKE
+                  where old code must be reused.
+- Assets policy : NEVER commit original game assets. Code + tools only.
+                  Player extracts from their own copy (see M2).
+
+2. QUALITY BAR ("2010 DONE" checklist per level/character)
+----------------------------------------------------------------
+[ ] 1080p / 60fps locked on GTX 1060-class hardware
+[ ] Hero model ~20K tris + normal map + specular map
+[ ] Enemy models 8-15K tris, same skeleton bone names as original
+[ ] Buildings: same layout, HD diffuse (AI x4) + generated normal maps
+[ ] Night emissive windows + street lighting
+[ ] Skybox + clouds + sun, distance fog
+[ ] One 2048 shadow map (sun/key light) + blob shadows REMOVED
+[ ] Blinn-Phong materials (diffuse + normal + spec), NO PBR (out of scope)
+[ ] Post: bloom (simple) + LUT color grading (+ optional light SSAO)
+[ ] Animation crossfade blending (no more hard cuts)
+[ ] Ragdoll-lite deaths, hit-stop (50ms), camera shake
+[ ] 3D positional audio + reverb zones
+[ ] Widescreen-correct FOV (no stretching), remappable gamepad
+[ ] Frustum culling + LOD (NextLOD field already exists!) + batching
+
+OUT OF SCOPE (PS4+ era, explicitly rejected):
+  PBR, ray tracing, DLSS/FSR, deferred rendering, open world changes,
+  new story/levels, multiplayer, consoles, mobile.
+
+3. ARCHITECTURE
+----------------------------------------------------------------
+  Game logic (reused, 95% untouched: spidey/baddy/AI/triggers/camera)
+        |
+  remake/core/  HAL interfaces (IRenderer, IAudio, IInput, IAssets)
+        |
+  remake/render/  D3D11 forward renderer (Blinn-Phong + shadows + post)
+  remake/audio/   miniaudio backend      remake/input/ SDL3 backend
+  remake/tools/   pkr_dump, model_viewer, level_viewer (ImGui)
+  remake/assets/  CONVERTED assets (generated locally, git-ignored)
+
+4. MILESTONES
+----------------------------------------------------------------
+M0 BASELINE (week 1)
+  - Build old code once (record result), read MODEL_PREVIEW path.
+  - This plan + remake/ scaffold committed.
+  - Exit: repo has locked plan; nothing broken (CI still green).
+  - Learn: repo orientation, CMake/vcpkg basics.
+
+M1 FIRST PIXELS (weeks 2-3)
+  - VS2022 + vcpkg: SDL3 window + D3D11 device + clear color + triangle.
+  - ImGui docked window with FPS counter.
+  - HLSL shader compile at build time (dxc) or runtime (D3DCompile).
+  - Exit: spidey_remake.exe opens 1080p window, draws triangle, shows FPS.
+  - Learn: D3D11 device/swapchain/pipeline/shaders (core graphics skill).
+
+M2 ASSET PIPELINE (weeks 3-5) *** KEY MILESTONE ***
+  - pkr_dump: parse .PKR (see pkr.h: PKR_HEADER/DIRINFO/FILEINFO + zlib)
+    -> list dirs/files, extract + decompress to disk.
+  - psx_parse: decode SModel blobs (verts/normals/faces + NextLOD),
+    SAnim data, Texture entries (tpage/clut) + palettes + PVR textures.
+  - Export: models -> glTF (.gltf+.bin), textures -> PNG, audio -> WAV.
+  - model_viewer tool (ImGui): open any character, orbit camera,
+    play any anim. THIS becomes the daily workshop.
+  - Exit: Spidey glTF opens in Blender; 10 textures as PNG; viewer runs.
+  - Learn: file formats, tools programming, glTF, Blender basics.
+  - NEED: one copy of original game files (PC version) to test against.
+
+M3 CORE MODERNIZATION (weeks 5-7)
+  - Float math core: replace fixed-point (>>12), rcossin_tbl, gte_*
+    with clean float math (own mini-lib or glm) behind SPIDEY_REMAKE.
+  - Fixed timestep: logic/physics at fixed dt, render interpolation.
+  - C++17 cleanup of touched files only; clang-format for remake/.
+  - Exit: old scene data updates + renders via new math, no logic change.
+  - Learn: 3D math, transforms, quaternions, fixed timestep.
+
+M4 SCENE ON NEW RENDERER (weeks 7-10)
+  - Load original SModel data into D3D11 buffers (positions/normals/UV).
+  - Convert PSX textures (palette->RGBA) at load; materials = diffuse.
+  - Draw full level 1: geometry + characters + skybox + fog + 1 shadow map.
+  - CPU skinning first (matches original), GPU skinning later.
+  - Exit: level 1 playable-looking on new renderer, 1080p/60, old assets.
+  - Learn: buffers, skinning, shadow mapping, culling, batching.
+
+M5 VERTICAL SLICE (weeks 10-14) *** WOW MILESTONE ***
+  - ONE night city level, FULL 2010 treatment (checklist in section 2).
+  - New/bumped Spidey model + normal/spec maps; AI-upscaled buildings.
+  - Animation blending + hit-stop + camera shake + bloom + LUT grading.
+  - Exit: before/after video; level plays start-to-finish at 60fps.
+  - Learn: materials, lighting craft, game feel, animation blending.
+  - Portfolio: this video alone is interview gold.
+
+M6 FULL GAME + SHIP (months 4-6)
+  - Apply M5 recipe to all levels + main villains (Venom/Carnage/Rhino/
+    Scorpion/Mysterio/DocOck...) + civilians/cops/thugs.
+  - Gameplay pass: coyote time, jump buffer, checkpoints, autosave,
+    difficulty, gamepad remap UI, photo mode.
+  - Audio pass: 3D mix, reverb, alert-music dynamics.
+  - Menus/HUD HD redraw; settings screen (Low/Med/High/Ultra-2010).
+  - x64 ship: installer/zip, mods/ folder (suits/levels), README.
+  - Exit: full playthrough, stable 60fps, public code release (no assets).
+  - Learn: optimization, shipping, mod support, project completion.
+
+5. FIRST 10 EXECUTION STEPS (do in order, check off)
+----------------------------------------------------------------
+[ ] 1. Install on PC: VS2022 (C++ desktop) + CMake 3.20+ + Git + vcpkg.
+[ ] 2. Clone repo, open remake/ as CMake project (vcpkg toolchain).
+[ ] 3. Build stub spidey_remake.exe (M0, zero deps) -> banner prints.
+[ ] 4. vcpkg install sdl3; open SDL3 window 1920x1080 + FPS title (M1).
+[ ] 5. Init D3D11 device + swapchain on SDL window; clear color (M1).
+[ ] 6. Draw first triangle with HLSL shaders (M1 DONE).
+[ ] 7. Add ImGui (docking) + FPS/frame-graph window (M1 polish).
+[ ] 8. Copy ONE .PKR from game install to WorkDir (never commit it).
+[ ] 9. Write pkr_dump: list contents of that PKR (M2 start).
+[ ] 10. Extract + zlib-decompress first files; document inner formats.
+Then continue M2 (psx_parse -> glTF/PNG -> model_viewer).
+
+WorkDir convention: remake/work/ (GIT-IGNORED) for game files + outputs.
+
+6. RISKS & MITIGATIONS
+----------------------------------------------------------------
+- No game files available -> use code-derived format docs + synthetic
+  test assets until files exist. (Ask: do you own the PC game?)
+- 64-bit pointer/address hacks in old code -> remake/ NEVER includes
+  old headers with hardcoded addresses; reuse by PORTING logic, not
+  by linking old objects.
+- font_draw.asm (x86 asm) -> replaced by FreeType/stb_truetype in M4+.
+- Scope creep -> section 2 checklist is the judge. If 360 couldn't do
+  it, we don't do it.
+- Solo art bottleneck -> 80% rule: AI upscale + generated normals +
+  good lighting = 80% of the look. Hand remodeling only for hero +
+  main villains.
+
+7. PORTFOLIO MAPPING (for game-industry entry)
+----------------------------------------------------------------
+- Engine/Tools programmer : M1 + M2 (renderer + asset conditioner).
+- Gameplay programmer     : M3 + M5 (timestep, feel, blending, combat).
+- Graphics programmer     : M4 + M5 (D3D11, HLSL, shadows, post).
+- Technical artist        : M2 + M5 (pipeline, materials, lighting).
+- Producer/finisher       : M6 (shipped, playable, documented).
+Devlog every milestone: 1 before/after image + 3 bullet points.
+
+================================================================
+END OF PLAN. Next action: execute steps 1-3 (M0), then M1.
+================================================================
