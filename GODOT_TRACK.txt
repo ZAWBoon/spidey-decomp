@@ -77,7 +77,7 @@ ART PASS 0 (procedural, no external assets) — DONE
 Hero v2, thug rig + barks, FX pack, cinematic lighting, all boss anims,
 hostage variants, sky dressing. (Details in git history.)
 
-FEEL PASS 1 (characters & levels) — batches 1-5 DONE
+FEEL PASS 1 (characters & levels) — batches 1-6 DONE
 ------------------------------------------------
 Batch 1 (hero feel): dodge dash (C / RB) + PERFECT DODGE slow-mo,
 hit-stop on connects (generation-guarded), web yank (Q / RS).
@@ -92,7 +92,13 @@ streets plaza (police line shifted) + crosswalks/newsstand/hydrants
 + 2 civilians; roofs south island (6m jump) + AC/vents/beacon;
 theater balcony (solid + ramp, gunner moved) + carpet/sconces/
 posters. 17 tokens (30 total). Zero gating-count changes.
-Next: procedural texture pass (buildings/ground detail, code-only).
+Batch 6 (procedural texture pass): core/proc_tex.gd paints 9
+ImageTextures at runtime (grass, asphalt, concrete, tile, carpet,
+wood, gravel, windows day/night) + one-line dress hook in
+LevelBase._ready. Auto-skins every level: flat neutral boxes get
+tiled ground by color/theme, towers get 4 emissive window facades
+at night. Zero level-file edits, zero gameplay changes.
+Next: traffic + time trials + breakables, then L7 DocOck.
 
 SHARED SYSTEMS
 --------------
@@ -106,15 +112,19 @@ enemies/thug.* — melee/gun AI: IDLE/PATROL/CHASE/ATTACK; patrol_points
   + air_pop(power). Rig variant auto: gunner if has_gun, bruiser if
   scale.x > 1.15 (set scale PRE-add: docks bruiser fixed).
 enemies/rhino.*, scorpion.*, mysterio.* — bosses: Health node +
-  downed/activated signals, boss bar via hud; wire downed manually
-  (see GOTCHAS). Mysterio clones: same scene, is_clone set pre-add,
-  1 HP, no "mysterio" group, +25 score, uncounted in enemies total.
-  Bosses have no yank_pull/air_pop: immune to pop, yanks zip you.
+  downed/activated signals, wire downed manually (see GOTCHAS).
+  Mysterio clones: same scene, is_clone set pre-add, 1 HP, no
+  "mysterio" group, +25 score, uncounted in enemies total. Bosses
+  have no yank_pull/air_pop: immune to pop, yanks zip you.
 npc/civilian.gd — ambient pedestrian (no tscn): wander/idle/cower,
   group "civilians", layer 0 / mask 1. Home captured first physics
   frame (levels add before positioning).
 pickups/spider_token.gd — hidden collectible (no tscn): Area3D r1.5,
   layer 8 / mask 2, group "spider_token". +100 score + global #N.
+core/proc_tex.gd — runtime texture painter (no tscn): 9 seeded
+  ImageTextures + dress_level() auto-pass (ground by color/theme,
+  emissive window facades on towers at night). Textures cached in
+  a static dict, painted once per session, shared by all levels.
 combat/tracer — enemy bolt (mask 3: player + statics, so cover works);
   set tint + speed pre-add for variants (green/purple bolts).
 props/car.gd — code-built StaticBody3D (no tscn): set paint pre-add;
@@ -129,13 +139,14 @@ autoload/ — game.gd (level flow, input map helpers — keep UNtyped;
 tools/test_runner.gd — Windows runtime checklist (tp/assert per level);
   bugle stages teleport-driven; boss levels assert boss dormant.
 tools/godot_lint.py + tools/gd_verify.py — sandbox checks (no engine):
-  syntax/style + 10 wiring cross-checks. Both must pass to commit.
+  syntax/style + 10 wiring cross-checks (incl. ProcTex API). Both
+  must pass to commit.
 remake/tools/pkr_dump.py — M2 start: pure-stdlib PKR lister/extractor
   for the user's own PC game copy (spec from pkr.h/pkr.cpp).
 
 VALIDATION (sandbox, no engine)
 -------------------------------
-python3 tools/godot_lint.py  ->  0 errors expected (39 gd / 24 tscn).
+python3 tools/godot_lint.py  ->  0 errors expected (40 gd / 24 tscn).
 python3 tools/gd_verify.py   ->  0 failures expected (10 checks).
 gdlint (gdtoolkit)           ->  clean; vars before @onready, no mid-file vars.
 Runtime proof happens on the user's Windows box via test_runner.
@@ -181,9 +192,13 @@ GOTCHAS
   coplanar-or-buried in the platform (bugle landings, theater balcony).
 - 6m roof gaps need full sprint jumps (7.5 v0 + 9.5 run ~ 6.5m range);
   never widen jump gaps past 6m without a swing anchor nearby.
+- ProcTex dress runs post-_build on scriptless StaticBody3D boxes only
+  (rotation/size/color guards); actors, water, ramps and emissive or
+  transparent boxes are skipped, so new deco boxes are textured only
+  if they look like ground (flat + 8 m + neutral/green/brown) or
+  towers (6 m tall + neutral). Keep gameplay paint saturated.
 
 NEXT
 ----
-Feel Pass 1 batch 6: procedural texture pass (window grids, asphalt,
-concrete noise via shaders/decals - code-only, no user files needed).
-Then: traffic + time trials + breakables. L7 DocOck after.
+Feel Pass 1 batch 7: traffic + time trials + breakables.
+Then L7 DocOck. Real character models/music still need user files.

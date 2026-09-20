@@ -24,6 +24,7 @@ var enemies_down: int = 0
 func _ready() -> void:
 	Game.register_level(self)
 	_build()
+	ProcTex.dress_level(self)  # Batch 6: procedural ground/facade textures.
 	_spawn_player()
 	_spawn_hud()
 	_connect_actors()

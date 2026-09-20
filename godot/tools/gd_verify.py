@@ -138,7 +138,7 @@ def main() -> int:
         infos.append(f"[ok] input actions ({len(used_in)} used)")
 
     # ---- 3. static/helper APIs ----
-    for cls in ["FX", "Blockout", "SkyDeco"]:
+    for cls in ["FX", "Blockout", "SkyDeco", "ProcTex"]:
         if cls not in classmap:
             fails.append(f"class {cls} not found for API check")
             continue
