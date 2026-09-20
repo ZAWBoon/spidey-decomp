@@ -7,6 +7,9 @@ Release/
 *.opt
 out/
 out_win/
+remake/work/
+remake/out/
+godot/.godot/
 *.sh
 *.dll
 *.exe

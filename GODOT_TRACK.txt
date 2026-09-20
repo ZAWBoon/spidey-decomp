@@ -1,0 +1,109 @@
+SPIDEY-DECOMP — GODOT TRACK
+============================
+Fan learning remake of a Spider-Man-style action game in Godot 4.
+PC-only (Windows x64 primary). Non-commercial. Quality bar: ~2010-era.
+Built level by level; this file tracks Godot-side progress.
+
+LEVELS (all playable from the title menu)
+----------------------------------------
+L0 Training  (levels/training/) — move/jump/punch/web/swing dummies.
+L1 Bank      (levels/bank/)     — lobby robbery: thugs, hostages, vault exit.
+L2 Docks     (levels/docks/)    — sunset yard, pier over water (fall = 10 dmg
+               + respawn), 2 cranes + 2 poles, 8 thugs incl. bruiser
+               (hp120/dmg18/scale 1.3), 2 hostages, 4 chain-exploding
+               barrels (fuse 0.25s, radius 6, 60 enemy / 25 player dmg),
+               2 medkits, warehouse door opens at 2 hostages + 8 downs.
+L3 Bugle     (levels/bugle/)    — Daily Bugle at night. Lobby -> newsroom
+               (f2) -> JJJ offices (f3) -> roof via rotated-box ramps.
+               6 thugs (2 gun, gun hp 40), 3 hostages. Player y > 4 drops
+               VENOM (enemies/venom.*): unkillable chaser, 800 HP floored
+               at 1, chase 7.2 (walk 6 < v < sprint 9.5), lunge < 4 m
+               (25 dmg + knockback), enrage tiers, webs = slow only.
+               Roof (y > 13.5) unlocks EXIT + Venom retreat-leap.
+L4 Streets   (levels/streets/)  — day avenue vs RHINO (enemies/rhino.*):
+               400 HP charger. PAW 0.9 s (tracks) -> CHARGE 15 m/s
+               locked (20 dmg + knockback; dodge: dy < 1.0 hits) ->
+               wall = 3 s stun. Armor x0.5, stunned x1.5. Enrage < 30 %.
+               Smashes 6 cars, stuns on walls. 4 thugs, 2 hostages.
+               Exit at full clear (5 downs + 2 saved).
+L5 Roofs     (levels/roofs/)    — night rooftops vs SCORPION
+               (enemies/scorpion.*): ranged boss, 450 HP. STRAFE at
+               10-16 m -> WINDUP 0.6 s -> BURST 3 green bolts (12 dmg).
+               Interruptible windup; tail slam < 4 m (ring telegraph,
+               15 dmg unless jumped). Enrage < 30 %: 5 bolts, cd 2.5 s.
+               Arena roof + side island (3.5 m jump); kill plane 10 dmg
+               + respawn. 4 thugs, 2 hostages, exit at full clear.
+L6 Theater   (levels/theater/)  — abandoned theater vs MYSTERIO
+               (enemies/mysterio.*): illusion boss, 500 HP, never walks.
+               Teleports between 5 pedestals (7 s, 4.5 enraged) + 2-3
+               1-HP transparent clones that fire weak bolts (6 dmg);
+               the SOLID one is real. Real alternates volleys (3 purple
+               bolts, 10 dmg, interruptible 0.7 s windup) and hypno wave
+               (r6 ring, 12 dmg, jump to dodge). Webs stagger 1 s.
+               Coplanar stage, curtains, 24 seat-cover boxes, chandelier
+               + curtain swing anchors. 4 thugs, 2 hostages, exit
+               (stage door) at full clear. Next: L7 (path open).
+
+ART PASS 0 (procedural, no external assets)
+-------------------------------------------
+Hero v2 (player/hero_rig.gd): articulated suit with joint pivots
+(hips/torso/head/shoulders/elbows/hips/knees), web-pattern shader on
+red parts (UV fract grid, no fwidth for GL Compatibility safety),
+chest + back spider emblems, glowing eyes. tick() poses every physics
+frame, absolute rotations (zeroed first): idle breathe, run cycle
+(scaled by speed), air spread, swing pose (rope arm up), punch blend
+per combo arm, web flick, land crouch, death topple. Player feeds it
+speed/air/swing/attack-blend/web/land/dead; landing detected via
+air->floor edge. Next: thug walk anims, particles pack, lighting pass.
+
+SHARED SYSTEMS
+--------------
+player/ — CharacterBody3D: walk 6 / sprint 9.5, jump 7.5 (~1.28 m),
+  combo 22/22/38, web (RMB, 10 fluid), swing (hold F near SwingAnchor).
+enemies/thug.* — melee/gun AI: IDLE/PATROL/CHASE/ATTACK; patrol_points
+  MUST be set BEFORE add_child (Thug._ready reads them).
+enemies/rhino.*, scorpion.*, mysterio.* — bosses: Health node +
+  downed/activated signals, boss bar via hud; wire downed manually
+  (see GOTCHAS). Mysterio clones: same scene, is_clone set pre-add,
+  1 HP, no "mysterio" group, +25 score, uncounted in enemies total.
+combat/tracer — enemy bolt (mask 3: player + statics, so cover works);
+  set tint + speed pre-add for variants (green/purple bolts).
+props/car.gd — code-built StaticBody3D (no tscn): set paint pre-add;
+  smash() disables collision, squashes + darkens, plays "crash".
+props/ — exit_gate (locked/unlocked), barrels, doors; npc/hostage (E rescue).
+ui/hud — bars/counters/prompts + boss bar (show/set/hide_boss).
+autoload/ — game.gd (level flow, input map helpers — keep UNtyped),
+  sfx.gd (procedural WAV synth incl. "roar", "crash", "sting", "poof").
+tools/test_runner.gd — Windows runtime checklist (tp/assert per level);
+  bugle stages teleport-driven; boss levels assert boss dormant.
+tools/godot_lint.py — gdparse + tscn checks run here (no engine in sandbox).
+remake/tools/pkr_dump.py — M2 start: pure-stdlib PKR lister/extractor
+  for the user's own PC game copy (spec from pkr.h/pkr.cpp).
+
+VALIDATION (sandbox, no engine)
+-------------------------------
+python3 tools/godot_lint.py  ->  0 errors expected (34 gd / 24 tscn).
+gdlint (gdtoolkit)           ->  clean; vars before @onready, no mid-file vars.
+Runtime proof happens on the user's Windows box via test_runner.
+
+GOTCHAS
+-------
+- One edit_file per FILE per batch (same-file parallel edits race).
+- LevelBase._connect_actors counts only Thug: bosses wire downed manually
+  (level sets enemies_total = 1, thugs auto-added after).
+- Area3D triggers must not overlap walkable decks (docks water y[-4,-1]).
+- CharacterBody3D has no auto-step: ramps for height, coplanar ground
+  (streets sidewalks flush, theater stage coplanar), never stair boxes.
+- Test walk phase moves ~9 m: keep boss triggers 4+ m past walk end
+  (theater trigger z<6 from spawn 18.5: walk ends ~z10, margin 4 m).
+- ExitGate/thug scenes drive level flow; LevelBase.debug_defeat explodes
+  barrels via has_method("detonate") and hits bosses via take_hit.
+- gdparse/gdlint catch syntax+style, NOT undeclared vars: hud.gd once
+  shipped without _player/_msg_tween/_dmg_tween/_result_shown (fixed L4).
+- Shaders are NOT validated here (no engine): keep them minimal and
+  standard (hero web pattern avoids fwidth for GL Compatibility).
+
+NEXT
+----
+Art Pass 0 cont: thug anims, particles/juice pack, per-level lighting.
+Then: real Spidey model (needs user files - see pkr_dump) or L7 DocOck.
