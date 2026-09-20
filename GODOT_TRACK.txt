@@ -51,6 +51,7 @@ L4 Streets   (levels/streets/)  — day avenue vs RHINO (enemies/rhino.*):
                crosswalks, newsstand, hydrants. 6 sidewalk Breakables
                (2 crates, 2 planters, 2 hydrants). Exit at full clear
                (5 downs + 2 saved). 4 spider-tokens.
+               SHOWCASE LEVEL (day): storefronts/signs/signals next.
 L5 Roofs     (levels/roofs/)    — night rooftops vs SCORPION
                (enemies/scorpion.*): ranged boss, 450 HP. STRAFE at
                10-16 m -> WINDUP 0.6 s -> BURST 3 green bolts (12 dmg).
@@ -113,7 +114,17 @@ roofs 4-gate time trials, session bests), Breakable (crates 1HP,
 planters 2HP, hydrants + water burst; +25, 30% web drop). Rhino
 plows breakables, barrels chain into them, civilians ignore static
 props. Docks 4 crates converted, streets 6 sidewalk smashables.
-Next: L7 DocOck.
+
+SHOWCASE PASS (procedural visuals, streets is the stage) — 8a DONE
+------------------------------------------------------------------
+Batch 8a (characters, game-wide): TRUE spider-web suit shader (radial
+spokes + rings, escape-free; blue parts webbed too), hero eye rims;
+painted face-quads for thugs (angry), civilians (2 variants),
+hostages (scared) + thug outfit trim (zipper, collar, belt, gunner
+gloves; bruiser brow moved up); Rhino cone horns + armor-plate hide.
+ProcTex grows to 14 textures (+ 4 faces + armor) + face_quad().
+Next: 8b streets environment (storefronts/signs, signals, manholes,
+litter, light polish). Then: L7 DocOck.
 
 SHARED SYSTEMS
 --------------
@@ -121,21 +132,25 @@ player/ — CharacterBody3D: walk 6 / sprint 9.5, jump 7.5 (~1.28 m),
   coyote+buffer 0.12, dodge (C) + perfect slow-mo, combo 22/22/38 +
   hit-stop, launcher (Shift+attack), air juggle, finisher vs
   stagger/stun, slam (S+attack mid-air), web (RMB, 10 fluid), yank
-  (Q, 15 fluid), swing (hold F near SwingAnchor).
+  (Q, 15 fluid), swing (hold F near SwingAnchor). HeroRig v3: true
+  web shader (red + blue), emblems, rimmed reactive eyes.
 enemies/thug.* — melee/gun AI: IDLE/PATROL/CHASE/ATTACK; patrol_points
   MUST be set BEFORE add_child (Thug._ready reads them). yank_pull()
   + air_pop(power). Rig variant auto: gunner if has_gun, bruiser if
-  scale.x > 1.15 (set scale PRE-add: docks bruiser fixed).
+  scale.x > 1.15 (set scale PRE-add: docks bruiser fixed). ThugRig:
+  painted angry face, zipper/collar/belt, gunner gloves, caps.
 enemies/rhino.*, scorpion.*, mysterio.* — bosses: Health node +
   downed/activated signals, wire downed manually (see GOTCHAS).
-  Mysterio clones: same scene, is_clone set pre-add, 1 HP, no
-  "mysterio" group, +25 score, uncounted in enemies total. Bosses
-  have no yank_pull/air_pop: immune to pop, yanks zip you. Rhino
-  charge smashes Car + Breakable, stuns only on StaticBody3D walls.
+  Rhino: cone horns, armor-plate hide, red eyes. Mysterio clones:
+  same scene, is_clone set pre-add, 1 HP, no "mysterio" group, +25
+  score, uncounted in enemies total. Bosses have no yank_pull/
+  air_pop: immune to pop, yanks zip you. Rhino charge smashes Car
+  + Breakable, stuns only on StaticBody3D walls.
 npc/civilian.gd — ambient pedestrian (no tscn): wander/idle/cower,
   group "civilians", layer 0 / mask 1. Home captured first physics
   frame (levels add before positioning). Cower threat check skips
-  non-CharacterBody3D (barrels/breakables are not scary).
+  non-CharacterBody3D (barrels/breakables are not scary). Painted
+  face (2 variants via face_quad).
 pickups/spider_token.gd — hidden collectible (no tscn): Area3D r1.5,
   layer 8 / mask 2, group "spider_token". +100 score + global #N.
 props/breakable.gd — smashable (no tscn): crate 1HP / planter 2HP /
@@ -148,16 +163,17 @@ props/trial_gate.gd — time-trial ring (no tscn): Area3D r2 + torus +
   label, group "trial_gate". Run state in statics (reset per level
   load), bests persist per session. Use spawn(). Colors: cyan start,
   green next, gold cleared, gray waiting.
-core/proc_tex.gd — runtime texture painter (no tscn): 9 seeded
-  ImageTextures + dress_level() auto-pass (ground by color/theme,
-  emissive window facades on towers at night). Textures cached in
-  a static dict, painted once per session, shared by all levels.
+core/proc_tex.gd — runtime texture painter (no tscn): 14 seeded
+  ImageTextures (9 grounds/facades + 4 painted faces + rhino armor)
+  + dress_level() auto-pass + face_quad() decal helper. Textures
+  cached in a static dict, painted once per session, shared by all.
 combat/tracer — enemy bolt (mask 3: player + statics, so cover works);
   set tint + speed pre-add for variants (green/purple bolts).
 props/car.gd — code-built StaticBody3D (no tscn): set paint pre-add;
   smash() disables collision, squashes + darkens, plays "crash".
 props/ — exit_gate (locked/unlocked), barrels (explode() chains into
-  Breakable via `is` branch), doors; npc/hostage (E rescue).
+  Breakable via `is` branch), doors; npc/hostage (E rescue, scared
+  painted face).
 ui/hud — bars/counters/prompts + boss bar (show/set/hide_boss).
 autoload/ — game.gd (level flow, input map helpers — keep UNtyped;
   actions: move/jump/sprint/attack/web/swing/interact/dodge/yank/
@@ -196,6 +212,10 @@ GOTCHAS
   shipped without _player/_msg_tween/_dmg_tween/_result_shown (fixed L4).
 - Shaders/particles are NOT validated here (no engine): keep to minimal
   standard features (web shader avoids fwidth; FX avoids curves/damping).
+- Never put backslash escapes (\\t, \\n) inside shader-code strings: a
+  stray backslash fails shader compile at runtime (hero went pink-risk);
+  use literal tabs/newlines in the """ block. True-web math (atan +
+  fract spokes/rings) is the approved suit pattern, shared red + blue.
 - edit_file fuzzy-matches whitespace: after single-line-anchor edits,
   verify indentation with sed (docks splash needed a fix once).
 - Levels add_child() actors BEFORE setting positions: _ready cannot use
@@ -231,8 +251,16 @@ GOTCHAS
   that must tell actors from props filters by `is` (test_runner does;
   civilian cower skips non-CharacterBody3D). New breakables: HP via
   take_hit only, never join "cars"/boss groups.
+- Face decals: ProcTex.face_quad() paints unshaded transparent quads;
+  parent to the head pivot (follows look-around), offset just outside
+  the skin surface (sphere r + 0.005). Faces stay readable at night
+  because they are unshaded; never shade them.
+- Never describe code from memory: read first, then claim. (Twice
+  burned: hero eyes/emblem/pattern + rhino eyes were claimed missing
+  from memory and all existed. The user's trust is worth the re-read.)
 
 NEXT
 ----
-L7 DocOck (new boss + level). Then: bank/bugle trials? Real character
-models/music still need user files.
+Showcase 8b: streets environment (storefronts/signs, crosswalk
+signals, manholes, litter, light polish). Then L7 DocOck. Real
+character models/music still need user files.

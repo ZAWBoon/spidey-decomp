@@ -304,19 +304,19 @@ func _build_body() -> void:
 	_body_root = Node3D.new()
 	_body_root.name = "Body"
 	rig.add_child(_body_root)
-	var hide := Color(0.45, 0.45, 0.48)
 	var dark := Color(0.32, 0.32, 0.35)
 	var horn_c := Color(0.85, 0.82, 0.7)
 	var root := _body_root
-	Blockout.box(root, Vector3(0, 1.25, -0.1), Vector3(1.9, 1.5, 2.7), hide, false).name = "Torso"
-	Blockout.box(root, Vector3(0, 2.05, 0.5), Vector3(1.6, 0.7, 1.2), hide, false).name = "Hump"
-	Blockout.box(root, Vector3(0, 1.4, 1.7), Vector3(1.2, 1.0, 1.1), hide, false).name = "Head"
+	var armor := StandardMaterial3D.new()
+	armor.albedo_texture = ProcTex.tex("armor")
+	armor.roughness = 0.8
+	_armored_box(root, Vector3(0, 1.25, -0.1), Vector3(1.9, 1.5, 2.7), armor, "Torso")
+	_armored_box(root, Vector3(0, 2.05, 0.5), Vector3(1.6, 0.7, 1.2), armor, "Hump")
+	_armored_box(root, Vector3(0, 1.4, 1.7), Vector3(1.2, 1.0, 1.1), armor, "Head")
 	Blockout.box(root, Vector3(0, 1.2, 2.4), Vector3(0.7, 0.6, 0.5), dark, false).name = "Snout"
-	var horn := Blockout.cylinder(root, Vector3(0, 1.45, 2.9), 0.14, 0.9, horn_c, false)
-	horn.rotation.x = PI * 0.5
+	var horn := _horn(root, Vector3(0, 1.45, 2.9), 0.14, 0.9, horn_c)
 	horn.name = "HornBig"
-	var horn2 := Blockout.cylinder(root, Vector3(0, 1.75, 2.45), 0.1, 0.5, horn_c, false)
-	horn2.rotation.x = PI * 0.5
+	var horn2 := _horn(root, Vector3(0, 1.75, 2.45), 0.1, 0.5, horn_c)
 	horn2.name = "HornSmall"
 	for sx in [-0.65, 0.65]:
 		for sz in [-0.9, 0.9]:
@@ -328,3 +328,25 @@ func _build_body() -> void:
 		var eye := Blockout.sphere(root, Vector3(sx, 1.7, 2.2), 0.1, Color(1, 0.1, 0.1))
 		eye.material_override = eye_mat
 		eye.name = "Eye"
+
+
+func _horn(root: Node3D, pos: Vector3, base_r: float, length: float,
+		tint: Color) -> MeshInstance3D:
+	var h := MeshInstance3D.new()
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = 0.02
+	mesh.bottom_radius = base_r
+	mesh.height = length
+	h.mesh = mesh
+	h.material_override = Blockout.mat(tint)
+	h.position = pos
+	h.rotation.x = PI * 0.5
+	root.add_child(h)
+	return h
+
+
+func _armored_box(root: Node3D, pos: Vector3, size: Vector3, mat: Material,
+		part_name: String) -> void:
+	var part := Blockout.box(root, pos, size, Color.WHITE, false) as MeshInstance3D
+	part.material_override = mat
+	part.name = part_name

@@ -131,4 +131,6 @@ func _build_look() -> void:
 		Color(0.15, 0.1, 0.08))
 	hair.scale = Vector3(1.0, 0.6, 1.0)
 	hair.name = "Hair"
+	var face := "face_civ_a" if abs(int(get_instance_id())) % 2 == 0 else "face_civ_b"
+	ProcTex.face_quad(_body, Vector3(0, 1.42, 0.195), 0.26, face)
 	_body.scale = Vector3(_size, _size, _size)

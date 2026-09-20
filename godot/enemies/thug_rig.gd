@@ -3,6 +3,7 @@ extends Node3D
 ## Procedural thug: articulated body (same joint set as HeroRig) posed from
 ## Thug AI state - idle look-around, patrol/chase run cycle, melee jab,
 ## gunner aim (gun rides in the right hand), stagger flinch, webbed slump.
+## Painted angry face + outfit trim (zipper, collar, belt, gunner gloves).
 ## Set `has_gun` and `variant` before add_child (0 melee, 1 gunner,
 ## 2 bruiser); all rotations absolute, zeroed first.
 
@@ -166,15 +167,22 @@ func _build() -> void:
 	if variant == 2:
 		skin = skin.darkened(0.25)
 	var pants := Color(0.1, 0.1, 0.12)
+	var trim := Color(0.05, 0.05, 0.06)
 	_hips = _pivot(self, Vector3(0, HIPS_Y, 0))
 	Blockout.box(_hips, Vector3.ZERO, Vector3(0.4 * bulk, 0.24, 0.26 * bulk), \
 		pants, false)
+	Blockout.box(_hips, Vector3(0, 0.09, 0),
+		Vector3(0.42 * bulk, 0.07, 0.28 * bulk), trim, false)
 	_torso = _pivot(_hips, Vector3(0, 0.08, 0))
 	Blockout.capsule_mesh(_torso, Vector3(0, 0.38, 0), 0.3 * bulk, 0.8, suit)
+	Blockout.box(_torso, Vector3(0, 0.38, 0.3 * bulk),
+		Vector3(0.05, 0.5, 0.03), trim, false)
+	_collar(suit.darkened(0.3))
 	_head = _pivot(_torso, Vector3(0, 0.8, 0))
 	Blockout.sphere(_head, Vector3(0, 0.08, 0), 0.2, skin)
+	ProcTex.face_quad(_head, Vector3(0, 0.1, 0.2), 0.26, "face_thug")
 	if variant == 2:
-		Blockout.box(_head, Vector3(0, 0.14, 0.19), Vector3(0.24, 0.06, 0.05), \
+		Blockout.box(_head, Vector3(0, 0.2, 0.18), Vector3(0.24, 0.06, 0.05), \
 			Color(0.05, 0.05, 0.05), false)
 	else:
 		Blockout.cylinder(_head, Vector3(0, 0.26, 0), 0.16, 0.08,
@@ -191,11 +199,23 @@ func _build() -> void:
 	_build_leg(_hip_r, pants)
 
 
+func _collar(tint: Color) -> void:
+	var collar := MeshInstance3D.new()
+	var cm := TorusMesh.new()
+	cm.inner_radius = 0.08
+	cm.outer_radius = 0.22
+	collar.mesh = cm
+	collar.material_override = Blockout.mat(tint)
+	collar.position = Vector3(0, 0.7, 0)
+	_torso.add_child(collar)
+
+
 func _build_arm(shoulder: Node3D, suit: Color, skin: Color, gun: bool, bulk: float) -> void:
 	Blockout.capsule_mesh(shoulder, Vector3(0, -0.2, 0), 0.1 * bulk, 0.42, suit)
 	var elbow := _pivot(shoulder, Vector3(0, -0.4, 0))
 	Blockout.capsule_mesh(elbow, Vector3(0, -0.17, 0), 0.09 * bulk, 0.38, suit)
-	Blockout.sphere(elbow, Vector3(0, -0.4, 0), 0.09 * bulk, skin)
+	var mitt := Color(0.08, 0.08, 0.1) if gun else skin
+	Blockout.sphere(elbow, Vector3(0, -0.4, 0), 0.09 * bulk, mitt)
 	if gun:
 		Blockout.box(elbow, Vector3(0, -0.4, 0.12), Vector3(0.08, 0.12, 0.4),
 			Color(0.05, 0.05, 0.05), false)

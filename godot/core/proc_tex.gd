@@ -198,6 +198,16 @@ static func _paint(kind: String, rng: RandomNumberGenerator) -> Image:
 			return _paint_windows(false, rng)
 		"windows_night":
 			return _paint_windows(true, rng)
+		"face_thug":
+			return _paint_face(0)
+		"face_civ_a":
+			return _paint_face(1)
+		"face_civ_b":
+			return _paint_face(2)
+		"face_scared":
+			return _paint_face(3)
+		"armor":
+			return _paint_armor(rng)
 	return null
 
 
@@ -318,4 +328,78 @@ static func _paint_windows(night: bool, rng: RandomNumberGenerator) -> Image:
 			img.fill_rect(Rect2i(ox + 26, oy, 3, 55), bar)
 			img.fill_rect(Rect2i(ox, oy + 26, 55, 3), bar)
 			img.fill_rect(Rect2i(ox, oy + 52, 55, 3), Color(0.55, 0.55, 0.58))
+	return img
+
+
+static func face_quad(parent: Node3D, pos: Vector3, size: float, kind: String) -> MeshInstance3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = tex(kind)
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.roughness = 1.0
+	var q := QuadMesh.new()
+	q.size = Vector2(size, size)
+	var mi := MeshInstance3D.new()
+	mi.mesh = q
+	mi.material_override = m
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.position = pos
+	parent.add_child(mi)
+	return mi
+
+
+static func _paint_face(mood: int) -> Image:
+	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var dark := Color(0.08, 0.06, 0.06)
+	var white := Color(0.96, 0.94, 0.9)
+	var ey := 20
+	var eh := 10
+	if mood == 3:
+		ey = 16
+		eh = 14
+	for ex in [16, 36]:
+		img.fill_rect(Rect2i(ex, ey, 12, eh), white)
+		img.fill_rect(Rect2i(ex + 3, ey + 2, 5, 6), dark)
+	match mood:
+		0:
+			img.fill_rect(Rect2i(14, 10, 6, 4), dark)
+			img.fill_rect(Rect2i(20, 12, 6, 4), dark)
+			img.fill_rect(Rect2i(26, 14, 5, 4), dark)
+			img.fill_rect(Rect2i(44, 10, 6, 4), dark)
+			img.fill_rect(Rect2i(38, 12, 6, 4), dark)
+			img.fill_rect(Rect2i(33, 14, 5, 4), dark)
+			img.fill_rect(Rect2i(24, 44, 16, 3), dark)
+		1:
+			img.fill_rect(Rect2i(15, 13, 14, 3), dark)
+			img.fill_rect(Rect2i(35, 13, 14, 3), dark)
+			img.fill_rect(Rect2i(22, 44, 6, 3), dark)
+			img.fill_rect(Rect2i(28, 46, 8, 3), dark)
+			img.fill_rect(Rect2i(36, 44, 6, 3), dark)
+		2:
+			img.fill_rect(Rect2i(15, 9, 14, 3), dark)
+			img.fill_rect(Rect2i(35, 9, 14, 3), dark)
+			img.fill_rect(Rect2i(26, 45, 12, 3), dark)
+		_:
+			img.fill_rect(Rect2i(15, 6, 14, 3), dark)
+			img.fill_rect(Rect2i(35, 6, 14, 3), dark)
+			img.fill_rect(Rect2i(28, 42, 8, 12), dark)
+			img.fill_rect(Rect2i(30, 44, 4, 8), Color(0, 0, 0, 0))
+	return img
+
+
+static func _paint_armor(rng: RandomNumberGenerator) -> Image:
+	var img := _blank(128, Color(0.45, 0.45, 0.48))
+	_grain(img, Color(0.45, 0.45, 0.48), 0.1, rng)
+	var seam := Color(0.24, 0.24, 0.26)
+	var hi := Color(0.62, 0.62, 0.64)
+	for row in range(4):
+		var y := row * 32
+		img.fill_rect(Rect2i(0, y, 128, 3), seam)
+		img.fill_rect(Rect2i(0, y + 3, 128, 1), hi)
+		var xs := [31, 73, 115] if row % 2 == 1 else [10, 52, 94]
+		for x in xs:
+			img.fill_rect(Rect2i(x, y, 2, 32), seam)
+			img.fill_rect(Rect2i(x + 2, y + 14, 3, 3), hi)
+	_speckle(img, Color(0.3, 0.3, 0.32), 120, rng)
 	return img

@@ -1,10 +1,13 @@
 class_name HeroRig
 extends Node3D
 ## Procedural Spider-Man v3: articulated suit (hips/torso/head/arms/legs
-## with joint pivots), web-pattern shader on the red parts, chest + back
-## spider emblems, web-shooter wristbands, boot cuffs, reactive eyes
-## (narrow when hurt). Player calls tick() every physics frame; all joint
-## rotations are set absolute (zeroed first), so poses never drift.
+## with joint pivots), TRUE spider-web shader on red AND blue parts
+## (radial spokes + concentric rings, no escape sequences - a stray
+## backslash in shader code fails compile and pinks the hero), chest +
+## back spider emblems, web-shooter wristbands, boot cuffs, reactive
+## eyes with black rims (narrow when hurt). Player calls tick() every
+## physics frame; all joint rotations are set absolute (zeroed first),
+## so poses never drift.
 
 const WEB_SHADER := """
 shader_type spatial;
@@ -12,11 +15,14 @@ render_mode diffuse_burley, specular_disabled;
 uniform vec4 tint : source_color = vec4(0.75, 0.08, 0.12, 1.0);
 uniform vec4 line : source_color = vec4(0.05, 0.05, 0.08, 1.0);
 void fragment() {
-\tvec2 g = abs(fract(UV * vec2(14.0, 10.0)) - 0.5);
-\tfloat d = min(g.x, g.y);
-\tfloat m = smoothstep(0.44, 0.5, d);
-\tALBEDO = mix(tint.rgb, line.rgb, m);
-\tROUGHNESS = 0.6;
+	vec2 cell = fract(UV * vec2(3.0, 3.0)) - 0.5;
+	float ang = atan(cell.y, cell.x);
+	float rad = length(cell) * 2.0;
+	float sp = abs(fract(ang * 1.9099) - 0.5);
+	float rg = abs(fract(rad * 2.5) - 0.5);
+	float m = smoothstep(0.43, 0.5, min(sp, rg));
+	ALBEDO = mix(tint.rgb, line.rgb, m);
+	ROUGHNESS = 0.6;
 }
 """
 
@@ -26,6 +32,7 @@ var _time: float = 0.0
 var _phase: float = 0.0
 var _dead_played: bool = false
 var _red_web: ShaderMaterial = null
+var _blue_web: ShaderMaterial = null
 
 var _hips: Node3D = null
 var _torso: Node3D = null
@@ -43,10 +50,14 @@ var _eye_r: MeshInstance3D = null
 
 
 func _ready() -> void:
-	_red_web = ShaderMaterial.new()
 	var shader := Shader.new()
 	shader.code = WEB_SHADER
+	_red_web = ShaderMaterial.new()
 	_red_web.shader = shader
+	_blue_web = ShaderMaterial.new()
+	_blue_web.shader = shader
+	_blue_web.set_shader_parameter("tint", Color(0.08, 0.12, 0.5))
+	_blue_web.set_shader_parameter("line", Color(0.02, 0.03, 0.14))
 	_build()
 
 
@@ -239,13 +250,18 @@ func _webby(part: MeshInstance3D) -> MeshInstance3D:
 	return part
 
 
+func _webby_blue(part: MeshInstance3D) -> MeshInstance3D:
+	part.material_override = _blue_web
+	return part
+
+
 func _build() -> void:
 	var blue := Color(0.08, 0.12, 0.5)
 	var red := Color(0.75, 0.08, 0.12)
 	var dark := Color(0.03, 0.03, 0.05)
 	var gold := Color(0.85, 0.65, 0.15)
 	_hips = _pivot(self, Vector3(0, HIPS_Y, 0))
-	Blockout.box(_hips, Vector3.ZERO, Vector3(0.42, 0.25, 0.28), blue, false)
+	_webby_blue(Blockout.box(_hips, Vector3.ZERO, Vector3(0.42, 0.25, 0.28), blue, false))
 	Blockout.box(_hips, Vector3(0, 0.1, 0), Vector3(0.44, 0.08, 0.3), gold, false)
 	_torso = _pivot(_hips, Vector3(0, 0.08, 0))
 	_webby(Blockout.capsule_mesh(_torso, Vector3(0, 0.38, 0), 0.26, 0.8, red))
@@ -278,9 +294,9 @@ func _build_arm(shoulder: Node3D, red: Color) -> void:
 
 
 func _build_leg(hip: Node3D, blue: Color, red: Color) -> void:
-	Blockout.capsule_mesh(hip, Vector3(0, -0.22, 0), 0.12, 0.5, blue)
+	_webby_blue(Blockout.capsule_mesh(hip, Vector3(0, -0.22, 0), 0.12, 0.5, blue))
 	var knee := _pivot(hip, Vector3(0, -0.46, 0))
-	Blockout.capsule_mesh(knee, Vector3(0, -0.19, 0), 0.1, 0.42, blue)
+	_webby_blue(Blockout.capsule_mesh(knee, Vector3(0, -0.19, 0), 0.1, 0.42, blue))
 	Blockout.box(knee, Vector3(0, -0.32, 0.02), Vector3(0.22, 0.1, 0.24),
 		Color(0.45, 0.05, 0.08), false)
 	Blockout.box(knee, Vector3(0, -0.42, 0.04), Vector3(0.2, 0.14, 0.3), red, false)
@@ -296,7 +312,19 @@ func _eyes() -> void:
 	eye_mat.emission_enabled = true
 	eye_mat.emission = Color(0.9, 0.95, 1.0)
 	eye_mat.emission_energy_multiplier = 0.6
+	var rim_mat := StandardMaterial3D.new()
+	rim_mat.albedo_color = Color(0.02, 0.02, 0.03)
+	rim_mat.roughness = 0.4
 	for side in [-1.0, 1.0]:
+		var rim := MeshInstance3D.new()
+		var rmesh := SphereMesh.new()
+		rmesh.radius = 0.058
+		rmesh.height = 0.155
+		rim.mesh = rmesh
+		rim.material_override = rim_mat
+		rim.position = Vector3(side * 0.085, 0.12, 0.155)
+		rim.rotation.z = side * -0.5
+		_head.add_child(rim)
 		var eye := MeshInstance3D.new()
 		var mesh := SphereMesh.new()
 		mesh.radius = 0.05

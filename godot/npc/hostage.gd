@@ -28,6 +28,7 @@ func _ready() -> void:
 	add_child(_body)
 	Blockout.capsule_mesh(_body, Vector3(0, 0.55, 0), 0.3, 0.8, shirt).name = "Torso"
 	Blockout.sphere(_body, Vector3(0, 1.1, 0), 0.2, skin).name = "Head"
+	ProcTex.face_quad(_body, Vector3(0, 1.12, 0.205), 0.28, "face_scared")
 	_body.scale = Vector3(_size, 0.72 * _size, _size)
 	_label = Blockout.label(self, Vector3(0, 1.9, 0), "Help!", Color(1, 0.75, 0.3), 72)
 	($RescueArea as Area3D).body_entered.connect(_on_body_entered)
