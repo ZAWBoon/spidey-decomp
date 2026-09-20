@@ -295,6 +295,7 @@ func _die() -> void:
 func _build_body() -> void:
 	rig_node = ThugRig.new()
 	rig_node.has_gun = has_gun
+	rig_node.variant = 1 if has_gun else (2 if scale.x > 1.15 else 0)
 	rig.add_child(rig_node)
 	_body_root = rig_node
 	_cocoon = MeshInstance3D.new()

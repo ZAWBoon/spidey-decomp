@@ -120,6 +120,11 @@ func _build_actors() -> void:
 	_spawn_pickup(HEALTH_SCENE, Vector3(-10, 0, -45))
 	_spawn_pickup(WEB_SCENE, Vector3(-10, 0, 50))
 	_spawn_pickup(WEB_SCENE, Vector3(10, 0, -20))
+	for pos in [Vector3(-15, 0, 45), Vector3(15, 0, 35), Vector3(-15, 0, -8),
+			Vector3(15, 0, -30), Vector3(-15, 0, -52)]:
+		var civ := Civilian.new()
+		add_child(civ)
+		civ.global_position = pos
 	# The boss, dormant until the trigger.
 	_rhino = RHINO_SCENE.instantiate() as Rhino
 	add_child(_rhino)

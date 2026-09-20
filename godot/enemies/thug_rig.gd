@@ -3,11 +3,13 @@ extends Node3D
 ## Procedural thug: articulated body (same joint set as HeroRig) posed from
 ## Thug AI state - idle look-around, patrol/chase run cycle, melee jab,
 ## gunner aim (gun rides in the right hand), stagger flinch, webbed slump.
-## Set `has_gun` before add_child; all rotations absolute, zeroed first.
+## Set `has_gun` and `variant` before add_child (0 melee, 1 gunner,
+## 2 bruiser); all rotations absolute, zeroed first.
 
 const HIPS_Y := 0.85
 
 var has_gun: bool = false
+var variant: int = 0
 
 var _time: float = 0.0
 var _phase: float = 0.0
@@ -73,6 +75,11 @@ func _pose_idle() -> void:
 	_el_r.rotation.x = -0.2
 	_knee_l.rotation.x = 0.06
 	_knee_r.rotation.x = 0.06
+	if variant == 2:
+		_sh_l.rotation.z = 0.4
+		_sh_r.rotation.z = -0.4
+		_el_l.rotation.x = -0.9
+		_el_r.rotation.x = -0.9
 
 
 func _pose_run(delta: float, sf: float) -> void:
@@ -145,35 +152,50 @@ func _pivot(parent: Node3D, pos: Vector3) -> Node3D:
 
 func _build() -> void:
 	var suit := Color(0.16, 0.22, 0.16)
-	if has_gun:
+	var bulk := 1.0
+	if variant == 2:
+		suit = Color(0.35, 0.12, 0.12)
+		bulk = 1.3
+	elif has_gun:
 		suit = Color(0.25, 0.16, 0.2)
+	else:
+		var jackets: Array[Color] = [Color(0.16, 0.22, 0.16), \
+				Color(0.3, 0.22, 0.12), Color(0.2, 0.2, 0.24)]
+		suit = jackets[abs(int(get_instance_id())) % jackets.size()]
 	var skin := Color(0.85, 0.65, 0.5)
+	if variant == 2:
+		skin = skin.darkened(0.25)
 	var pants := Color(0.1, 0.1, 0.12)
 	_hips = _pivot(self, Vector3(0, HIPS_Y, 0))
-	Blockout.box(_hips, Vector3.ZERO, Vector3(0.4, 0.24, 0.26), pants, false)
+	Blockout.box(_hips, Vector3.ZERO, Vector3(0.4 * bulk, 0.24, 0.26 * bulk), \
+		pants, false)
 	_torso = _pivot(_hips, Vector3(0, 0.08, 0))
-	Blockout.capsule_mesh(_torso, Vector3(0, 0.38, 0), 0.3, 0.8, suit)
+	Blockout.capsule_mesh(_torso, Vector3(0, 0.38, 0), 0.3 * bulk, 0.8, suit)
 	_head = _pivot(_torso, Vector3(0, 0.8, 0))
 	Blockout.sphere(_head, Vector3(0, 0.08, 0), 0.2, skin)
-	Blockout.cylinder(_head, Vector3(0, 0.26, 0), 0.16, 0.08,
-		suit.darkened(0.4), false)
-	Blockout.box(_head, Vector3(0, 0.24, 0.2), Vector3(0.2, 0.04, 0.16),
-		suit.darkened(0.4), false)
-	_sh_l = _pivot(_torso, Vector3(-0.35, 0.62, 0))
-	_sh_r = _pivot(_torso, Vector3(0.35, 0.62, 0))
-	_build_arm(_sh_l, suit, skin, false)
-	_build_arm(_sh_r, suit, skin, has_gun)
+	if variant == 2:
+		Blockout.box(_head, Vector3(0, 0.14, 0.19), Vector3(0.24, 0.06, 0.05), \
+			Color(0.05, 0.05, 0.05), false)
+	else:
+		Blockout.cylinder(_head, Vector3(0, 0.26, 0), 0.16, 0.08,
+			suit.darkened(0.4), false)
+		Blockout.box(_head, Vector3(0, 0.24, 0.2), Vector3(0.2, 0.04, 0.16),
+			suit.darkened(0.4), false)
+	_sh_l = _pivot(_torso, Vector3(-0.35 * bulk, 0.62, 0))
+	_sh_r = _pivot(_torso, Vector3(0.35 * bulk, 0.62, 0))
+	_build_arm(_sh_l, suit, skin, false, bulk)
+	_build_arm(_sh_r, suit, skin, has_gun, bulk)
 	_hip_l = _pivot(_hips, Vector3(-0.15, -0.03, 0))
 	_hip_r = _pivot(_hips, Vector3(0.15, -0.03, 0))
 	_build_leg(_hip_l, pants)
 	_build_leg(_hip_r, pants)
 
 
-func _build_arm(shoulder: Node3D, suit: Color, skin: Color, gun: bool) -> void:
-	Blockout.capsule_mesh(shoulder, Vector3(0, -0.2, 0), 0.1, 0.42, suit)
+func _build_arm(shoulder: Node3D, suit: Color, skin: Color, gun: bool, bulk: float) -> void:
+	Blockout.capsule_mesh(shoulder, Vector3(0, -0.2, 0), 0.1 * bulk, 0.42, suit)
 	var elbow := _pivot(shoulder, Vector3(0, -0.4, 0))
-	Blockout.capsule_mesh(elbow, Vector3(0, -0.17, 0), 0.09, 0.38, suit)
-	Blockout.sphere(elbow, Vector3(0, -0.4, 0), 0.09, skin)
+	Blockout.capsule_mesh(elbow, Vector3(0, -0.17, 0), 0.09 * bulk, 0.38, suit)
+	Blockout.sphere(elbow, Vector3(0, -0.4, 0), 0.09 * bulk, skin)
 	if gun:
 		Blockout.box(elbow, Vector3(0, -0.4, 0.12), Vector3(0.08, 0.12, 0.4),
 			Color(0.05, 0.05, 0.05), false)

@@ -24,8 +24,8 @@ L4 Streets   (levels/streets/)  — day avenue vs RHINO (enemies/rhino.*):
                400 HP charger. PAW 0.9 s (tracks) -> CHARGE 15 m/s
                locked (20 dmg + knockback; dodge: dy < 1.0 hits) ->
                wall = 3 s stun. Armor x0.5, stunned x1.5. Enrage < 30 %.
-               Smashes 6 cars, stuns on walls. 4 thugs, 2 hostages.
-               Exit at full clear (5 downs + 2 saved).
+               Smashes 6 cars, stuns on walls. 4 thugs, 2 hostages,
+               5 ambient civilians. Exit at full clear (5 downs + 2 saved).
 L5 Roofs     (levels/roofs/)    — night rooftops vs SCORPION
                (enemies/scorpion.*): ranged boss, 450 HP. STRAFE at
                10-16 m -> WINDUP 0.6 s -> BURST 3 green bolts (12 dmg).
@@ -49,21 +49,22 @@ ART PASS 0 (procedural, no external assets) — DONE
 Hero v2, thug rig + barks, FX pack, cinematic lighting, all boss anims,
 hostage variants, sky dressing. (Details in git history.)
 
-FEEL PASS 1 (characters & levels) — batches 1-2 DONE
+FEEL PASS 1 (characters & levels) — batches 1-3 DONE
 ------------------------------------------------
 Batch 1 (hero feel): dodge dash (C / RB) + PERFECT DODGE slow-mo,
-hit-stop on connects (generation-guarded), web yank (Q / RS):
-thugs fly to you, bosses zip you to them.
-Batch 2 (Hero v3 + air game): v3 look (slimmer torso, wider
-shoulders, bigger chest emblem, silver web-shooter wristbands,
-boot cuffs, angrier eye tilt, eyes narrow + hunch while iframes).
-Launcher (Shift+attack grounded): uppercut pose, you hop, enemies
-popped up (thugs air_pop 10). Air hits juggle (thugs air_pop 6 +
-you hover). Finishers: attacking a STAGGERED/STUNNED thug kills
-instantly (FINISH! flash, gold ring, long hit-stop). Ground slam
-(S+attack in air): tucked dive, AoE 30 dmg r4.5 on landing + ring
-+ trauma + "slam" boom. New sfx: launch, slam.
-Next: Thug v2 (bruiser/gunner bodies) + ambient civilians.
+hit-stop on connects (generation-guarded), web yank (Q / RS).
+Batch 2 (Hero v3 + air game): v3 look, launcher (Shift+attack), air
+juggles, finishers vs stagger/stun, ground slam (S+attack mid-air).
+Batch 3 (Thug v2 + life + verification): rig variants - melee (3
+jacket tints), gunner (dark coat), bruiser (1.3x bulk, guard pose,
+angry brow, no cap; auto when scale.x > 1.15). Civilians
+(npc/civilian.gd, code-built): wander + idle + cower (enemies < 7 m
+or sprinting player < 3.5 m), 5 shirts x 3 skins x 3 sizes, ghost
+vs actors (layer 0) / solid vs world (mask 1); 5 roam the streets
+sidewalks. gd_verify.py: 10 static cross-checks (sounds, inputs,
+APIs, rig arity, enums, groups, has_method, classes, onready paths,
+signals) - runs with every commit from now on.
+Next: L0-L2 widen + spider-tokens.
 
 SHARED SYSTEMS
 --------------
@@ -74,13 +75,16 @@ player/ — CharacterBody3D: walk 6 / sprint 9.5, jump 7.5 (~1.28 m),
   (Q, 15 fluid), swing (hold F near SwingAnchor).
 enemies/thug.* — melee/gun AI: IDLE/PATROL/CHASE/ATTACK; patrol_points
   MUST be set BEFORE add_child (Thug._ready reads them). yank_pull()
-  + air_pop(power) for hero yank/launcher/juggle/slam (cocoon-safe:
-  air_pop keeps STUNNED).
+  + air_pop(power). Rig variant auto: gunner if has_gun, bruiser if
+  scale.x > 1.15 (docks bruiser), else melee with jacket variety.
 enemies/rhino.*, scorpion.*, mysterio.* — bosses: Health node +
   downed/activated signals, boss bar via hud; wire downed manually
   (see GOTCHAS). Mysterio clones: same scene, is_clone set pre-add,
   1 HP, no "mysterio" group, +25 score, uncounted in enemies total.
   Bosses have no yank_pull/air_pop: immune to pop, yanks zip you.
+npc/civilian.gd — ambient pedestrian (no tscn): wander/idle/cower,
+  group "civilians", layer 0 / mask 1. Home captured first physics
+  frame (levels add before positioning).
 combat/tracer — enemy bolt (mask 3: player + statics, so cover works);
   set tint + speed pre-add for variants (green/purple bolts).
 props/car.gd — code-built StaticBody3D (no tscn): set paint pre-add;
@@ -93,13 +97,15 @@ autoload/ — game.gd (level flow, input map helpers — keep UNtyped;
   sting/poof, bark_* x3, yank/perfect/launch/slam, jingles).
 tools/test_runner.gd — Windows runtime checklist (tp/assert per level);
   bugle stages teleport-driven; boss levels assert boss dormant.
-tools/godot_lint.py — gdparse + tscn checks run here (no engine in sandbox).
+tools/godot_lint.py + tools/gd_verify.py — sandbox checks (no engine):
+  syntax/style + 10 wiring cross-checks. Both must pass to commit.
 remake/tools/pkr_dump.py — M2 start: pure-stdlib PKR lister/extractor
   for the user's own PC game copy (spec from pkr.h/pkr.cpp).
 
 VALIDATION (sandbox, no engine)
 -------------------------------
-python3 tools/godot_lint.py  ->  0 errors expected (37 gd / 24 tscn).
+python3 tools/godot_lint.py  ->  0 errors expected (38 gd / 24 tscn).
+python3 tools/gd_verify.py   ->  0 failures expected (10 checks).
 gdlint (gdtoolkit)           ->  clean; vars before @onready, no mid-file vars.
 Runtime proof happens on the user's Windows box via test_runner.
 
@@ -122,7 +128,8 @@ GOTCHAS
 - edit_file fuzzy-matches whitespace: after single-line-anchor edits,
   verify indentation with sed (docks splash needed a fix once).
 - Levels add_child() actors BEFORE setting positions: _ready cannot use
-  global_position (hostage variants use instance-id hash instead).
+  global_position (hostage variants use instance-id hash instead;
+  civilian captures home on first physics frame).
 - find_children on code-built nodes needs owned=false (owner is null);
   `as` casts only objects - never `as Vector3` (use typed locals).
 - Mysterio APPEAR spins rig.rotation.y freely; TAUNT re-faces absolutely
@@ -133,9 +140,11 @@ GOTCHAS
   or scene changes).
 - Player reads Thug.State.STAGGER/STUNNED for finishers (global-class
   enum access). Bosses use different State enums - never compare them.
+- collision_layer = 0 is a valid ghost (detected by nothing); the mask
+  still drives move_and_slide (civilian: layer 0 / mask 1).
 
 NEXT
 ----
-Feel Pass 1 batch 3: Thug v2 (bruiser/gunner bodies) + civilians.
-Then: L0-L2 widen + tokens, L3-L6 widen + tokens, traffic + time
-trials + breakables. L7 DocOck after.
+Feel Pass 1 batch 4: L0-L2 widen + spider-tokens.
+Then: L3-L6 widen + tokens, traffic + time trials + breakables.
+L7 DocOck after.
