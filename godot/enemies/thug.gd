@@ -226,6 +226,8 @@ func take_hit(amount: float, _from: Node = null) -> void:
 		return
 	health.take_damage(amount, _from)
 	Sfx.play_at("hit", global_position)
+	FX.hit_spark(get_tree().current_scene,
+			global_position + Vector3(0, 1.2, 0), Color(1, 0.85, 0.3))
 	_pop_scale()
 	if state == State.DEAD:
 		return

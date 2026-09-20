@@ -29,6 +29,9 @@ func unlock() -> void:
 	locked = false
 	_paint()
 	Sfx.play("pickup")
+	var scene := get_tree().current_scene
+	FX.sparkle(scene, global_position + Vector3(0, 1.5, 0), Color(0.3, 1, 0.4))
+	FX.ring(scene, global_position, Color(0.3, 1, 0.4, 0.7), 3.0, 0.4)
 	if Game.hud != null:
 		Game.hud.flash_message("Exit open!", Color(0.4, 1, 0.5))
 

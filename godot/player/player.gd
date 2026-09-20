@@ -105,6 +105,7 @@ func _physics_process(delta: float) -> void:
 
 	var air_now := not is_on_floor()
 	if _was_air and not air_now:
+		FX.land_dust(get_tree().current_scene, global_position)
 		_land_t = 0.25
 	_was_air = air_now
 	_tick_hero(delta)

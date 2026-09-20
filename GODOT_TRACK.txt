@@ -59,7 +59,20 @@ Thugs (enemies/thug_rig.gd): same joint set + cap; idle look-around,
 patrol/chase run cycle, melee jab (0.3 s pulse on swing), gunner aim
 (gun rides in right hand), stagger flinch, webbed slump. Thug feeds
 speed/state/gun/punch; cocoon + alert label + death tween untouched.
-Next: particles/juice pack, per-level lighting pass.
+FX (core/fx.gd): one-shot CPUParticles3D bursts (shared mesh, group
+"vfx", auto-free, validity-guarded) + shockwave rings (torus + fade
+tween). Presets: punch_hit, hit_spark, land_dust, explosion (fire +
+smoke + sparks + ring), poof, sparkle, trail_puff, splash. Wired:
+player landing, thug hits, rhino stun (burst + ring), scorpion slam
+(burst + r6 ring), mysterio reappear (poof + ring), barrels, hostage
+rescue, pickups, exit unlock, bomb defuse, docks splash. Only safe
+particle props used (amount/lifetime/one_shot/velocity/gravity/
+scale/color/draw_pass_1 - no curves/damping).
+Lighting: all 7 levels got glow (bloom 0.3 day - 0.55 theater) +
+adjustment (sat 1.1-1.15, contrast 1.05) in their Environment;
+silently ignored if the renderer skips them (no crash risk).
+Next: boss anim touches (rhino gallop, venom crouch-walk), hostage
+variants, skybox interest (moon/clouds), thug voice barks (synth).
 
 SHARED SYSTEMS
 --------------
@@ -87,7 +100,7 @@ remake/tools/pkr_dump.py — M2 start: pure-stdlib PKR lister/extractor
 
 VALIDATION (sandbox, no engine)
 -------------------------------
-python3 tools/godot_lint.py  ->  0 errors expected (35 gd / 24 tscn).
+python3 tools/godot_lint.py  ->  0 errors expected (36 gd / 24 tscn).
 gdlint (gdtoolkit)           ->  clean; vars before @onready, no mid-file vars.
 Runtime proof happens on the user's Windows box via test_runner.
 
@@ -105,10 +118,12 @@ GOTCHAS
   barrels via has_method("detonate") and hits bosses via take_hit.
 - gdparse/gdlint catch syntax+style, NOT undeclared vars: hud.gd once
   shipped without _player/_msg_tween/_dmg_tween/_result_shown (fixed L4).
-- Shaders are NOT validated here (no engine): keep them minimal and
-  standard (hero web pattern avoids fwidth for GL Compatibility).
+- Shaders/particles are NOT validated here (no engine): keep to minimal
+  standard features (web shader avoids fwidth; FX avoids curves/damping).
+- edit_file fuzzy-matches whitespace: after single-line-anchor edits,
+  verify indentation with sed (docks splash needed a fix once).
 
 NEXT
 ----
-Art Pass 0 cont: particles/juice pack, per-level lighting pass.
+Art Pass 0 cont: boss anim touches, hostage variants, sky interest.
 Then: real Spidey model (needs user files - see pkr_dump) or L7 DocOck.

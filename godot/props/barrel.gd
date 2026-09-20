@@ -43,6 +43,7 @@ func explode() -> void:
 		return
 	_exploded = true
 	Sfx.play_at("explosion", global_position)
+	FX.explosion(get_tree().current_scene, global_position + Vector3(0, 0.8, 0))
 	_flash()
 	for node in get_tree().get_nodes_in_group("enemies"):
 		var target := node as Node3D

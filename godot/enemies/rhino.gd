@@ -180,6 +180,10 @@ func _wall_stun() -> void:
 	_state_t = 2.2 if _enraged else stun_time
 	velocity = Vector3.ZERO
 	Sfx.play_at("crash", global_position)
+	var scene := get_tree().current_scene
+	FX.burst(scene, global_position + Vector3(0, 1, 0),
+			Color(0.8, 0.75, 0.7), 20, 8.0, 0.15, 0.6)
+	FX.ring(scene, global_position, Color(1, 0.8, 0.4, 0.8), 4.0, 0.35)
 	if Game.hud != null:
 		Game.hud.flash_message("Now! Hit him!", Color(0.4, 1, 0.5), 2.0)
 	if _player != null:

@@ -61,6 +61,7 @@ func _build_water() -> void:
 func _on_water_body(body: Node3D) -> void:
 	if not body.is_in_group("player") or player == null:
 		return
+	FX.splash(self, Vector3(body.global_position.x, -1.5, body.global_position.z))
 	player.take_hit(10.0, null)
 	if not player.health.is_dead():
 		respawn_player()

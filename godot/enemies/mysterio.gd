@@ -253,6 +253,9 @@ func _reappear() -> void:
 	_state_t = 0.3
 	_tele_cd = 4.5 if _enraged else 7.0
 	Sfx.play_at("poof", global_position)
+	var scene := get_tree().current_scene
+	FX.poof(scene, global_position + Vector3(0, 1.2, 0), Color(0.7, 0.3, 1.0))
+	FX.ring(scene, global_position, Color(0.7, 0.3, 1.0, 0.7), 3.0, 0.35)
 	_reshuffle_clones()
 
 

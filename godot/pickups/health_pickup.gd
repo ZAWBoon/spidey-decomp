@@ -33,6 +33,8 @@ func _on_body_entered(body: Node3D) -> void:
 		var hero: Variant = body
 		hero.add_health(heal_amount)
 		Sfx.play("pickup")
+		FX.sparkle(get_tree().current_scene,
+				global_position + Vector3(0, 0.9, 0), Color(0.3, 1, 0.4))
 		if Game.hud != null:
 			Game.hud.flash_message("+%d Health" % int(heal_amount), Color(0.4, 1, 0.5))
 		queue_free()

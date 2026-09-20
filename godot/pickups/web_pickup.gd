@@ -32,6 +32,8 @@ func _on_body_entered(body: Node3D) -> void:
 		var hero: Variant = body
 		hero.add_fluid(fluid_amount)
 		Sfx.play("pickup")
+		FX.sparkle(get_tree().current_scene,
+				global_position + Vector3(0, 0.9, 0), Color(0.6, 0.85, 1.0))
 		if Game.hud != null:
 			Game.hud.flash_message("+%d Web Fluid" % int(fluid_amount), Color(0.6, 0.85, 1.0))
 		queue_free()

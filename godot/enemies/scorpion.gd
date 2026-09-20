@@ -231,6 +231,10 @@ func _do_slam() -> void:
 	state = State.SLAM
 	_state_t = 0.4
 	Sfx.play_at("crash", global_position)
+	var scene := get_tree().current_scene
+	FX.burst(scene, global_position + Vector3(0, 0.5, 0),
+			Color(0.6, 0.55, 0.5), 20, 9.0, 0.15, 0.6)
+	FX.ring(scene, global_position, Color(0.7, 1, 0.4, 0.7), 6.0, 0.4)
 	if _player == null or _player.health.is_dead():
 		return
 	var to: Vector3 = _player.global_position - global_position

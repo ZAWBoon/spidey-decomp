@@ -47,6 +47,8 @@ func _save() -> void:
 	_label.text = "Saved!"
 	_label.modulate = Color(0.4, 1, 0.5)
 	Sfx.play_at("rescue", global_position)
+	FX.sparkle(get_tree().current_scene,
+			global_position + Vector3(0, 1.0, 0), Color(0.3, 1, 0.4))
 	if Game.player != null:
 		var hero: Variant = Game.player
 		hero.add_health(25.0)

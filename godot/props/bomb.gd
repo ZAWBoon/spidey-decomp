@@ -72,6 +72,8 @@ func do_use() -> void:
 	_label.text = "SAFE"
 	_label.modulate = Color(0.4, 1, 0.5)
 	Sfx.play("rescue")
+	FX.sparkle(get_tree().current_scene,
+			global_position + Vector3(0, 1.0, 0), Color(0.3, 1, 0.4))
 	if Game.hud != null:
 		Game.hud.flash_message("Bomb defused! +300", Color(0.4, 1, 0.5))
 		Game.hud.hide_bomb_timer()
