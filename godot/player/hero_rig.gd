@@ -1,8 +1,9 @@
 class_name HeroRig
 extends Node3D
-## Procedural Spider-Man: articulated suit (hips/torso/head/arms/legs with
-## joint pivots), a tiny web-pattern shader on the red parts, chest + back
-## spider emblems. Player calls tick() every physics frame; all joint
+## Procedural Spider-Man v3: articulated suit (hips/torso/head/arms/legs
+## with joint pivots), web-pattern shader on the red parts, chest + back
+## spider emblems, web-shooter wristbands, boot cuffs, reactive eyes
+## (narrow when hurt). Player calls tick() every physics frame; all joint
 ## rotations are set absolute (zeroed first), so poses never drift.
 
 const WEB_SHADER := """
@@ -11,11 +12,11 @@ render_mode diffuse_burley, specular_disabled;
 uniform vec4 tint : source_color = vec4(0.75, 0.08, 0.12, 1.0);
 uniform vec4 line : source_color = vec4(0.05, 0.05, 0.08, 1.0);
 void fragment() {
-	vec2 g = abs(fract(UV * vec2(14.0, 10.0)) - 0.5);
-	float d = min(g.x, g.y);
-	float m = smoothstep(0.44, 0.5, d);
-	ALBEDO = mix(tint.rgb, line.rgb, m);
-	ROUGHNESS = 0.6;
+\tvec2 g = abs(fract(UV * vec2(14.0, 10.0)) - 0.5);
+\tfloat d = min(g.x, g.y);
+\tfloat m = smoothstep(0.44, 0.5, d);
+\tALBEDO = mix(tint.rgb, line.rgb, m);
+\tROUGHNESS = 0.6;
 }
 """
 
@@ -37,6 +38,8 @@ var _hip_l: Node3D = null
 var _hip_r: Node3D = null
 var _knee_l: Node3D = null
 var _knee_r: Node3D = null
+var _eye_l: MeshInstance3D = null
+var _eye_r: MeshInstance3D = null
 
 
 func _ready() -> void:
@@ -48,8 +51,8 @@ func _ready() -> void:
 
 
 func tick(delta: float, speed: float, airborne: bool, swinging: bool,
-		attack_blend: float, combo: int, web_t: float, land_t: float,
-		dead: bool) -> void:
+		attack_blend: float, combo: int, fx_timers: Vector2, dead: bool,
+		hurt: float, alt: int) -> void:
 	_time += delta
 	if dead:
 		_play_dead()
@@ -64,12 +67,18 @@ func tick(delta: float, speed: float, airborne: bool, swinging: bool,
 		_pose_run(delta, sf)
 	else:
 		_pose_idle()
-	if attack_blend > 0.01:
+	if attack_blend > 0.01 and alt == 0:
 		_pose_punch(attack_blend, combo)
-	if web_t > 0.0:
-		_pose_web_flick(clampf(web_t / 0.25, 0.0, 1.0))
-	if land_t > 0.0:
-		_pose_land(clampf(land_t / 0.25, 0.0, 1.0))
+	if fx_timers.x > 0.0:
+		_pose_web_flick(clampf(fx_timers.x / 0.25, 0.0, 1.0))
+	if fx_timers.y > 0.0:
+		_pose_land(clampf(fx_timers.y / 0.25, 0.0, 1.0))
+	if hurt > 0.0:
+		_pose_hurt(minf(1.0, hurt))
+	if alt == 1:
+		_pose_launcher()
+	elif alt == 2:
+		_pose_slam()
 
 
 func _zero_pose() -> void:
@@ -77,6 +86,8 @@ func _zero_pose() -> void:
 	for joint in [_hips, _torso, _head, _sh_l, _sh_r, _el_l, _el_r,
 			_hip_l, _hip_r, _knee_l, _knee_r]:
 		(joint as Node3D).rotation = Vector3.ZERO
+	_eye_l.scale = Vector3.ONE
+	_eye_r.scale = Vector3.ONE
 
 
 func _pose_idle() -> void:
@@ -170,6 +181,42 @@ func _pose_land(k: float) -> void:
 	_sh_r.rotation.z = -0.3 * k
 
 
+func _pose_hurt(k: float) -> void:
+	var sq := 1.0 - 0.45 * k
+	_eye_l.scale = Vector3(1.0, sq, 1.0)
+	_eye_r.scale = Vector3(1.0, sq, 1.0)
+	_head.rotation.x += 0.25 * k
+	_torso.rotation.x += 0.15 * k
+
+
+func _pose_launcher() -> void:
+	_sh_r.rotation.x = -2.9
+	_el_r.rotation.x = -0.05
+	_sh_l.rotation.x = 0.5
+	_el_l.rotation.x = -0.6
+	_torso.rotation.x = -0.18
+	_head.rotation.x = -0.25
+	_hips.position.y += 0.06
+	_hip_l.rotation.x = -1.1
+	_knee_l.rotation.x = 0.4
+	_hip_r.rotation.x = 0.25
+	_knee_r.rotation.x = 0.15
+
+
+func _pose_slam() -> void:
+	_hips.position.y -= 0.12
+	_torso.rotation.x = 0.35
+	_head.rotation.x = 0.3
+	_sh_l.rotation.x = 0.7
+	_sh_r.rotation.x = 0.7
+	_el_l.rotation.x = -0.9
+	_el_r.rotation.x = -0.9
+	_hip_l.rotation.x = -1.1
+	_hip_r.rotation.x = -1.1
+	_knee_l.rotation.x = 1.6
+	_knee_r.rotation.x = 1.6
+
+
 func _play_dead() -> void:
 	if _dead_played:
 		return
@@ -201,14 +248,14 @@ func _build() -> void:
 	Blockout.box(_hips, Vector3.ZERO, Vector3(0.42, 0.25, 0.28), blue, false)
 	Blockout.box(_hips, Vector3(0, 0.1, 0), Vector3(0.44, 0.08, 0.3), gold, false)
 	_torso = _pivot(_hips, Vector3(0, 0.08, 0))
-	_webby(Blockout.capsule_mesh(_torso, Vector3(0, 0.38, 0), 0.28, 0.8, red))
-	_emblem(Vector3(0, 0.55, 0.27), 1.0, dark)
+	_webby(Blockout.capsule_mesh(_torso, Vector3(0, 0.38, 0), 0.26, 0.8, red))
+	_emblem(Vector3(0, 0.55, 0.27), 1.2, dark)
 	_emblem(Vector3(0, 0.55, -0.27), 1.4, dark)
 	_head = _pivot(_torso, Vector3(0, 0.8, 0))
 	_webby(Blockout.sphere(_head, Vector3(0, 0.08, 0), 0.2, red))
 	_eyes()
-	_sh_l = _pivot(_torso, Vector3(-0.36, 0.62, 0))
-	_sh_r = _pivot(_torso, Vector3(0.36, 0.62, 0))
+	_sh_l = _pivot(_torso, Vector3(-0.38, 0.62, 0))
+	_sh_r = _pivot(_torso, Vector3(0.38, 0.62, 0))
 	_build_arm(_sh_l, red)
 	_build_arm(_sh_r, red)
 	_hip_l = _pivot(_hips, Vector3(-0.15, -0.03, 0))
@@ -221,6 +268,8 @@ func _build_arm(shoulder: Node3D, red: Color) -> void:
 	_webby(Blockout.capsule_mesh(shoulder, Vector3(0, -0.2, 0), 0.1, 0.45, red))
 	var elbow := _pivot(shoulder, Vector3(0, -0.42, 0))
 	_webby(Blockout.capsule_mesh(elbow, Vector3(0, -0.18, 0), 0.09, 0.4, red))
+	Blockout.box(elbow, Vector3(0, -0.32, 0), Vector3(0.2, 0.08, 0.2),
+		Color(0.75, 0.75, 0.8), false)
 	Blockout.sphere(elbow, Vector3(0, -0.42, 0), 0.09, red)
 	if shoulder == _sh_l:
 		_el_l = elbow
@@ -232,6 +281,8 @@ func _build_leg(hip: Node3D, blue: Color, red: Color) -> void:
 	Blockout.capsule_mesh(hip, Vector3(0, -0.22, 0), 0.12, 0.5, blue)
 	var knee := _pivot(hip, Vector3(0, -0.46, 0))
 	Blockout.capsule_mesh(knee, Vector3(0, -0.19, 0), 0.1, 0.42, blue)
+	Blockout.box(knee, Vector3(0, -0.32, 0.02), Vector3(0.22, 0.1, 0.24),
+		Color(0.45, 0.05, 0.08), false)
 	Blockout.box(knee, Vector3(0, -0.42, 0.04), Vector3(0.2, 0.14, 0.3), red, false)
 	if hip == _hip_l:
 		_knee_l = knee
@@ -253,8 +304,12 @@ func _eyes() -> void:
 		eye.mesh = mesh
 		eye.material_override = eye_mat
 		eye.position = Vector3(side * 0.085, 0.12, 0.16)
-		eye.rotation.z = side * -0.35
+		eye.rotation.z = side * -0.5
 		_head.add_child(eye)
+		if side < 0.0:
+			_eye_l = eye
+		else:
+			_eye_r = eye
 
 
 func _emblem(center: Vector3, emblem_scale: float, dark: Color) -> void:

@@ -49,33 +49,38 @@ ART PASS 0 (procedural, no external assets) — DONE
 Hero v2, thug rig + barks, FX pack, cinematic lighting, all boss anims,
 hostage variants, sky dressing. (Details in git history.)
 
-FEEL PASS 1 (characters & levels) — batch 1 DONE
+FEEL PASS 1 (characters & levels) — batches 1-2 DONE
 ------------------------------------------------
-Hero feel: dodge dash (C / pad RB, 0.5 s cd, works in air, detaches
-swing, spin-flip visual, red puff) with full iframes; hits taken
-mid-dodge become PERFECT DODGE (0.25x slow-mo 0.5 s, +25 web fluid
-once per dodge, "perfect" shimmer sfx). Punch connects trigger
-hit-stop (0.08x for 0.05-0.09 s by combo step, generation-guarded so
-overlaps never leak time_scale; restored on death + level change).
-Web yank (Q / pad RS, 15 fluid, 0.8 s cd, 14 m front cone): light
-enemies with yank_pull() (thugs: yanked + staggered 0.6 s) fly to
-you; anything else zips YOU to it (17 m/s + hop). Yank draws a
-0.2 s web line on the swing rope mesh.
-Next: Hero v3 look + launcher/air combos + finisher/slam.
+Batch 1 (hero feel): dodge dash (C / RB) + PERFECT DODGE slow-mo,
+hit-stop on connects (generation-guarded), web yank (Q / RS):
+thugs fly to you, bosses zip you to them.
+Batch 2 (Hero v3 + air game): v3 look (slimmer torso, wider
+shoulders, bigger chest emblem, silver web-shooter wristbands,
+boot cuffs, angrier eye tilt, eyes narrow + hunch while iframes).
+Launcher (Shift+attack grounded): uppercut pose, you hop, enemies
+popped up (thugs air_pop 10). Air hits juggle (thugs air_pop 6 +
+you hover). Finishers: attacking a STAGGERED/STUNNED thug kills
+instantly (FINISH! flash, gold ring, long hit-stop). Ground slam
+(S+attack in air): tucked dive, AoE 30 dmg r4.5 on landing + ring
++ trauma + "slam" boom. New sfx: launch, slam.
+Next: Thug v2 (bruiser/gunner bodies) + ambient civilians.
 
 SHARED SYSTEMS
 --------------
 player/ — CharacterBody3D: walk 6 / sprint 9.5, jump 7.5 (~1.28 m),
-  coyote+buffer 0.12, dodge (C), combo 22/22/38 + hit-stop, web (RMB,
-  10 fluid), yank (Q, 15 fluid), swing (hold F near SwingAnchor).
+  coyote+buffer 0.12, dodge (C) + perfect slow-mo, combo 22/22/38 +
+  hit-stop, launcher (Shift+attack), air juggle, finisher vs
+  stagger/stun, slam (S+attack mid-air), web (RMB, 10 fluid), yank
+  (Q, 15 fluid), swing (hold F near SwingAnchor).
 enemies/thug.* — melee/gun AI: IDLE/PATROL/CHASE/ATTACK; patrol_points
   MUST be set BEFORE add_child (Thug._ready reads them). yank_pull()
-  for the hero yank (stagger 0.6 + fling, dead-guarded).
+  + air_pop(power) for hero yank/launcher/juggle/slam (cocoon-safe:
+  air_pop keeps STUNNED).
 enemies/rhino.*, scorpion.*, mysterio.* — bosses: Health node +
   downed/activated signals, boss bar via hud; wire downed manually
   (see GOTCHAS). Mysterio clones: same scene, is_clone set pre-add,
   1 HP, no "mysterio" group, +25 score, uncounted in enemies total.
-  Bosses have no yank_pull: yanks zip the player to them instead.
+  Bosses have no yank_pull/air_pop: immune to pop, yanks zip you.
 combat/tracer — enemy bolt (mask 3: player + statics, so cover works);
   set tint + speed pre-add for variants (green/purple bolts).
 props/car.gd — code-built StaticBody3D (no tscn): set paint pre-add;
@@ -85,7 +90,7 @@ ui/hud — bars/counters/prompts + boss bar (show/set/hide_boss).
 autoload/ — game.gd (level flow, input map helpers — keep UNtyped;
   actions: move/jump/sprint/attack/web/swing/interact/dodge/yank/
   pause/debug), sfx.gd (procedural WAV synth: punch/hit/roar/crash/
-  sting/poof, bark_* x3, yank, perfect, jingles).
+  sting/poof, bark_* x3, yank/perfect/launch/slam, jingles).
 tools/test_runner.gd — Windows runtime checklist (tp/assert per level);
   bugle stages teleport-driven; boss levels assert boss dormant.
 tools/godot_lint.py — gdparse + tscn checks run here (no engine in sandbox).
@@ -126,9 +131,11 @@ GOTCHAS
   _hitstop restores only for the latest gen; _on_died and
   Game._do_change_level force 1.0 (slow-mo never leaks across death
   or scene changes).
+- Player reads Thug.State.STAGGER/STUNNED for finishers (global-class
+  enum access). Bosses use different State enums - never compare them.
 
 NEXT
 ----
-Feel Pass 1 batch 2: Hero v3 look + launcher/air combos + finisher/slam.
-Then: Thug v2 + civilians, L0-L2 widen + tokens, L3-L6 widen + tokens,
-traffic + time trials + breakables. L7 DocOck after.
+Feel Pass 1 batch 3: Thug v2 (bruiser/gunner bodies) + civilians.
+Then: L0-L2 widen + tokens, L3-L6 widen + tokens, traffic + time
+trials + breakables. L7 DocOck after.

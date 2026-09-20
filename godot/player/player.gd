@@ -1,8 +1,9 @@
 class_name Player
 extends CharacterBody3D
 ## Spider-Man controller: run/sprint/jump (coyote+buffer), dodge dash with
-## perfect-dodge slow-mo, 3-hit combo with hit-stop, web shots (stun),
-## web yanks (pull thugs / zip to bosses), web swinging, hold-to-interact.
+## perfect-dodge slow-mo, 3-hit combo with hit-stop, launcher (Shift+attack),
+## air juggles, finishers on staggered thugs, ground slam (S+attack in air),
+## web shots (stun), web yanks, web swinging, hold-to-interact.
 ## Visuals + procedural animation live in HeroRig (hero_rig.gd).
 
 signal fluid_changed(value: float, maximum: float)
@@ -24,6 +25,12 @@ const YANK_CD := 0.8
 const ATTACK_DAMAGE: Array[float] = [22.0, 22.0, 38.0]
 const ATTACK_TIME: Array[float] = [0.32, 0.32, 0.45]
 const COMBO_WINDOW := 0.9
+const LAUNCH_DMG := 15.0
+const LAUNCH_POP := 10.0
+const AIR_POP := 6.0
+const SLAM_DMG := 30.0
+const SLAM_RADIUS := 4.5
+const SLAM_FALL := 22.0
 const WEB_COST := 10.0
 const WEB_MAX := 100.0
 const WEB_REGEN := 6.0
@@ -65,6 +72,8 @@ var _yank_cd: float = 0.0
 var _yank_line_t: float = 0.0
 var _yank_b: Vector3 = Vector3.ZERO
 var _hitstop_gen: int = 0
+var _launch_t: float = 0.0
+var _slam: bool = false
 
 @onready var rig: Node3D = $Rig
 @onready var cam_rig: CameraRig = $CameraRig
@@ -124,6 +133,8 @@ func _physics_process(delta: float) -> void:
 
 	var air_now := not is_on_floor()
 	if _was_air and not air_now:
+		if _slam:
+			_do_slam_boom()
 		FX.land_dust(get_tree().current_scene, global_position)
 		_land_t = 0.25
 	_was_air = air_now
@@ -145,6 +156,7 @@ func _tick_timers(delta: float) -> void:
 	_dodge_cd = maxf(0.0, _dodge_cd - delta)
 	_yank_cd = maxf(0.0, _yank_cd - delta)
 	_yank_line_t = maxf(0.0, _yank_line_t - delta)
+	_launch_t = maxf(0.0, _launch_t - delta)
 	if Input.is_action_just_pressed("jump"):
 		_buffer = JUMP_BUFFER
 
@@ -156,8 +168,14 @@ func _tick_hero(delta: float) -> void:
 	if _attack_t > 0.0:
 		var total: float = ATTACK_TIME[_combo]
 		blend = sin(PI * clampf(1.0 - _attack_t / total, 0.0, 1.0))
+	var alt := 0
+	if _launch_t > 0.0:
+		alt = 1
+	elif _slam:
+		alt = 2
 	hero.tick(delta, get_horizontal_speed(), not is_on_floor(), _swinging,
-		blend, _combo, _web_t, _land_t, health.is_dead())
+		blend, _combo, Vector2(_web_t, _land_t), health.is_dead(),
+		minf(1.0, _iframes / 0.6), alt)
 
 
 func _physics_ground(delta: float, wish: Vector3, sprinting: bool, input_vec: Vector2) -> void:
@@ -169,6 +187,11 @@ func _physics_ground(delta: float, wish: Vector3, sprinting: bool, input_vec: Ve
 			velocity.y -= gravity * delta
 		elif velocity.y < 0.0:
 			velocity.y = -0.5
+		return
+	if _slam:
+		velocity.x = move_toward(velocity.x, 0.0, 60.0 * delta)
+		velocity.z = move_toward(velocity.z, 0.0, 60.0 * delta)
+		velocity.y = -SLAM_FALL
 		return
 	var target_speed := SPRINT_SPEED if sprinting else WALK_SPEED
 	var accel := 42.0 if is_on_floor() else 14.0
@@ -225,6 +248,12 @@ func _physics_dodge_input(wish: Vector3) -> void:
 
 func _physics_attack(_delta: float) -> void:
 	if Input.is_action_just_pressed("attack") and _attack_t <= 0.0:
+		if not _swinging and not is_on_floor() and Input.is_action_pressed("move_back"):
+			_start_slam()
+			return
+		if not _swinging and is_on_floor() and Input.is_action_pressed("sprint"):
+			_do_launcher()
+			return
 		if _combo_t > 0.0:
 			_combo = mini(_combo + 1, 2)
 		else:
@@ -249,13 +278,81 @@ func _physics_attack(_delta: float) -> void:
 	var hit_any := false
 	for body in punch_area.get_overlapping_bodies():
 		if body.is_in_group("enemies"):
-			var enemy: Variant = body
-			enemy.take_hit(ATTACK_DAMAGE[_combo], self)
+			if body is Thug and (body.get("state") == Thug.State.STAGGER \
+					or body.get("state") == Thug.State.STUNNED):
+				(body as Variant).take_hit(9999.0, self)
+				_finisher_juice(body as Node3D)
+			else:
+				(body as Variant).take_hit(ATTACK_DAMAGE[_combo], self)
+				if not is_on_floor() and (body as Node).has_method("air_pop"):
+					(body as Variant).air_pop(AIR_POP)
 			hit_any = true
 	if hit_any:
 		Sfx.play("punch")
 		cam_rig.add_trauma(0.25 + 0.12 * _combo)
 		_hitstop(0.08, 0.05 + 0.02 * _combo)
+		if not is_on_floor() and not _slam:
+			velocity.y = maxf(velocity.y, 1.5)
+
+
+func _do_launcher() -> void:
+	_launch_t = 0.35
+	_attack_t = 0.35
+	_attack_hit_done = true
+	_combo = 0
+	_combo_t = COMBO_WINDOW
+	velocity.y = JUMP_SPEED
+	Sfx.play("swing_whoosh", -4.0)
+	Sfx.play("launch")
+	FX.trail_puff(get_tree().current_scene, global_position + Vector3(0, 0.5, 0), \
+		Color(0.9, 0.2, 0.25))
+	var hit_any := false
+	for body in punch_area.get_overlapping_bodies():
+		if body.is_in_group("enemies"):
+			(body as Variant).take_hit(LAUNCH_DMG, self)
+			if (body as Node).has_method("air_pop"):
+				(body as Variant).air_pop(LAUNCH_POP)
+			hit_any = true
+	if hit_any:
+		Sfx.play("punch", -4.0)
+
+
+func _start_slam() -> void:
+	_slam = true
+	velocity.x = 0.0
+	velocity.z = 0.0
+	velocity.y = -10.0
+	Sfx.play("swing_whoosh", -2.0)
+	FX.trail_puff(get_tree().current_scene, global_position, Color(0.9, 0.2, 0.25))
+
+
+func _do_slam_boom() -> void:
+	_slam = false
+	var scene := get_tree().current_scene
+	for node in get_tree().get_nodes_in_group("enemies"):
+		var e := node as Node3D
+		if e == null:
+			continue
+		var to: Vector3 = e.global_position - global_position
+		if Vector2(to.x, to.z).length() > SLAM_RADIUS or absf(to.y) > 3.0:
+			continue
+		(node as Variant).take_hit(SLAM_DMG, self)
+		if (node as Node).has_method("air_pop"):
+			(node as Variant).air_pop(5.0)
+	FX.burst(scene, global_position + Vector3(0, 0.5, 0),
+			Color(0.6, 0.55, 0.5), 24, 10.0, 0.16, 0.6)
+	FX.ring(scene, global_position, Color(1, 0.4, 0.3, 0.8), SLAM_RADIUS, 0.4)
+	Sfx.play("slam")
+	cam_rig.add_trauma(0.7)
+
+
+func _finisher_juice(target: Node3D) -> void:
+	_hitstop(0.05, 0.25)
+	Sfx.play("punch")
+	FX.ring(get_tree().current_scene, target.global_position + Vector3(0, 1.0, 0), \
+		Color(1, 0.9, 0.4, 0.9), 2.5, 0.3)
+	if Game.hud != null:
+		Game.hud.flash_message("FINISH!", Color(1, 0.85, 0.3), 1.0)
 
 
 func _hitstop(scale: float, dur: float) -> void:

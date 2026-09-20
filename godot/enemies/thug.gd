@@ -258,6 +258,15 @@ func yank_pull(pull_dir: Vector3) -> void:
 	Sfx.play_at("bark_hurt", global_position, -4.0)
 
 
+func air_pop(power: float) -> void:
+	if state == State.DEAD:
+		return
+	velocity.y = power
+	if state != State.STUNNED:
+		state = State.STAGGER
+		_stagger_t = 0.7
+
+
 func _pop_scale() -> void:
 	if _body_root == null:
 		return
