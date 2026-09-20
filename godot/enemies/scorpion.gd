@@ -33,6 +33,12 @@ var _enraged: bool = false
 var _player = null
 var _body_root: Node3D = null
 var _ring: MeshInstance3D = null
+var _anim_t: float = 0.0
+var _tail2: Node3D = null
+var _tail3: Node3D = null
+var _stinger: Node3D = null
+var _legs: Array = []
+var _leg_base: Array = []
 
 @onready var rig: Node3D = $Rig
 @onready var health: Health = $Health
@@ -48,6 +54,12 @@ func _ready() -> void:
 	health.changed.connect(_on_hp_changed)
 	_build_body()
 	_build_ring()
+	_tail2 = _body_root.get_node("Tail2") as Node3D
+	_tail3 = _body_root.get_node("Tail3") as Node3D
+	_stinger = _body_root.get_node("Stinger") as Node3D
+	_legs = _body_root.find_children("Leg", "MeshInstance3D", false, false)
+	for leg in _legs:
+		_leg_base.append((leg as Node3D).position)
 
 
 func _physics_process(delta: float) -> void:
@@ -88,6 +100,7 @@ func _physics_process(delta: float) -> void:
 			if _state_t <= 0.0:
 				state = State.STRAFE
 	move_and_slide()
+	_animate(delta)
 
 
 func activate() -> void:
@@ -294,6 +307,64 @@ func _die() -> void:
 	fall.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	tween.tween_property(rig, "position:y", 0.35, 0.35)
 	downed.emit()
+
+
+# -------------------------------------------------------------------- anim --
+func _animate(delta: float) -> void:
+	if _tail2 == null:
+		return
+	_anim_t += delta
+	var t := _anim_t
+	_body_root.position.y = 0.0
+	_body_root.rotation.x = 0.0
+	_body_root.rotation.z = 0.0
+	_reset_legs()
+	_reset_tail()
+	match state:
+		State.DORMANT:
+			_body_root.position.y = 0.05 * sin(t * 2.0)
+			_tail2.rotation.z = 0.06 * sin(t * 1.5)
+		State.STRAFE:
+			_body_root.position.y = 0.08 * absf(sin(t * 9.0))
+			_body_root.rotation.z = 0.04 * sin(t * 4.5)
+			if _legs.size() == 2:
+				var l0: Vector3 = _leg_base[0]
+				var l1: Vector3 = _leg_base[1]
+				(_legs[0] as Node3D).position.y = l0.y + 0.22 * maxf(0.0, sin(t * 9.0))
+				(_legs[1] as Node3D).position.y = l1.y + 0.22 * maxf(0.0, sin(t * 9.0 + PI))
+			_tail2.rotation.z = 0.12 * sin(t * 4.5)
+		State.WINDUP:
+			_body_root.rotation.x = -0.1
+			_tail3.position.y = 3.1
+			_stinger.position.y = 3.1
+			_stinger.position.z = 0.2 + 0.2 * sin(t * 20.0)
+		State.BURST:
+			_body_root.rotation.x = 0.08 + 0.04 * sin(t * 30.0)
+			var pump := 0.12 * absf(sin(t * 30.0))
+			_tail3.position.y = 2.8 - pump
+			_stinger.position.y = 2.8 - pump
+		State.SLAM_W:
+			_body_root.position.y = -0.2
+			_tail3.position.y = 3.4
+			_stinger.position = Vector3(0, 3.4, 0.2)
+		State.SLAM:
+			_body_root.position.y = -0.35
+			_body_root.rotation.x = 0.25
+			_tail3.position.y = 2.0
+			_stinger.position = Vector3(0, 2.0, 0.6)
+		State.STAGGER:
+			_body_root.rotation.z = 0.12 * sin(t * 18.0)
+
+
+func _reset_legs() -> void:
+	for i in _legs.size():
+		(_legs[i] as Node3D).position = _leg_base[i]
+
+
+func _reset_tail() -> void:
+	_tail2.rotation.z = 0.0
+	_tail3.position = Vector3(0, 2.8, -0.5)
+	_stinger.position = Vector3(0, 2.8, 0.2)
 
 
 # --------------------------------------------------------------------- look --

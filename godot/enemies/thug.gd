@@ -111,7 +111,7 @@ func _scan() -> void:
 	if _player_dist() < sight_range:
 		state = State.CHASE
 		_alert_t = 1.0
-		Sfx.play_at("click", global_position, 6.0)
+		Sfx.play_at("bark_alert", global_position)
 
 
 func _face_point(point: Vector3) -> void:
@@ -193,6 +193,7 @@ func _tick_attack(delta: float) -> void:
 		if _attack_t <= 0.0:
 			_attack_t = attack_cooldown
 			Sfx.play_at("swing_whoosh", global_position, -4.0)
+			Sfx.play_at("bark_attack", global_position, -8.0)
 			_punch_t = 0.3
 			if dist < attack_range * 1.25:
 				_player.take_hit(damage, self)
@@ -231,6 +232,7 @@ func take_hit(amount: float, _from: Node = null) -> void:
 	_pop_scale()
 	if state == State.DEAD:
 		return
+	Sfx.play_at("bark_hurt", global_position, -2.0)
 	if state != State.STUNNED:
 		state = State.STAGGER
 		_stagger_t = 0.35

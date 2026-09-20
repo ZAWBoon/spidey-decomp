@@ -36,6 +36,10 @@ var _clones: Array[Mysterio] = []
 var _player = null
 var _body_root: Node3D = null
 var _ring: MeshInstance3D = null
+var _anim_t: float = 0.0
+var _cape: Node3D = null
+var _arms: Array = []
+var _gloves: Array = []
 
 @onready var rig: Node3D = $Rig
 @onready var health: Health = $Health
@@ -56,6 +60,9 @@ func _ready() -> void:
 	if is_clone:
 		_ghostify()
 	_build_ring()
+	_cape = _body_root.get_node("Cape") as Node3D
+	_arms = _body_root.find_children("Arm", "MeshInstance3D", false, false)
+	_gloves = _body_root.find_children("Glove", "MeshInstance3D", false, false)
 
 
 func _physics_process(delta: float) -> void:
@@ -106,6 +113,7 @@ func _physics_process(delta: float) -> void:
 			if _state_t <= 0.0:
 				state = State.TAUNT
 	move_and_slide()
+	_animate(delta)
 
 
 func activate() -> void:
@@ -400,6 +408,71 @@ func _shatter() -> void:
 		var timer := get_tree().create_timer(0.3)
 		timer.timeout.connect(puff.queue_free)
 	queue_free()
+
+
+# -------------------------------------------------------------------- anim --
+func _animate(delta: float) -> void:
+	if _cape == null:
+		return
+	_anim_t += delta
+	var t := _anim_t
+	if state == State.APPEAR:
+		rig.rotation.y += delta * 18.0
+	var hover := 0.15 * sin(t * 2.0)
+	_body_root.position.y = hover
+	_body_root.rotation.z = 0.05 * sin(t * 1.7)
+	_cape.rotation.x = 0.12 * sin(t * 3.0)
+	_reset_arms()
+	match state:
+		State.TAUNT:
+			if _arms.size() == 2 and _gloves.size() == 2:
+				var sway_l := 0.12 * sin(t * 2.0)
+				var sway_r := 0.12 * sin(t * 2.0 + PI)
+				(_arms[0] as Node3D).position.y = 1.1 + sway_l
+				(_arms[1] as Node3D).position.y = 1.1 + sway_r
+				(_gloves[0] as Node3D).position.y = 0.75 + sway_l
+				(_gloves[1] as Node3D).position.y = 0.75 + sway_r
+		State.VOLLEY_W:
+			_body_root.position.y = hover + 0.2
+			_raise_arms(0.4, 0.18)
+		State.VOLLEY:
+			_body_root.position.y = hover + 0.2
+			_raise_arms(0.4 + 0.08 * sin(t * 25.0), 0.18)
+		State.WAVE_W:
+			_body_root.position.y = hover + 0.45
+			_raise_arms(0.5, 0.3)
+		State.WAVE:
+			_body_root.position.y = -0.2
+			_lower_arms()
+		State.STAGGER:
+			_body_root.rotation.z = 0.12 * sin(t * 18.0)
+
+
+func _reset_arms() -> void:
+	if _arms.size() != 2 or _gloves.size() != 2:
+		return
+	(_arms[0] as Node3D).position = Vector3(-0.42, 1.1, 0)
+	(_arms[1] as Node3D).position = Vector3(0.42, 1.1, 0)
+	(_gloves[0] as Node3D).position = Vector3(-0.42, 0.75, 0)
+	(_gloves[1] as Node3D).position = Vector3(0.42, 0.75, 0)
+
+
+func _raise_arms(dy: float, spread: float) -> void:
+	if _arms.size() != 2 or _gloves.size() != 2:
+		return
+	(_arms[0] as Node3D).position = Vector3(-0.42 - spread, 1.1 + dy, 0.1)
+	(_arms[1] as Node3D).position = Vector3(0.42 + spread, 1.1 + dy, 0.1)
+	(_gloves[0] as Node3D).position = Vector3(-0.42 - spread, 0.75 + dy, 0.1)
+	(_gloves[1] as Node3D).position = Vector3(0.42 + spread, 0.75 + dy, 0.1)
+
+
+func _lower_arms() -> void:
+	if _arms.size() != 2 or _gloves.size() != 2:
+		return
+	(_arms[0] as Node3D).position = Vector3(-0.52, 0.85, 0)
+	(_arms[1] as Node3D).position = Vector3(0.52, 0.85, 0)
+	(_gloves[0] as Node3D).position = Vector3(-0.52, 0.5, 0)
+	(_gloves[1] as Node3D).position = Vector3(0.52, 0.5, 0)
 
 
 # --------------------------------------------------------------------- look --

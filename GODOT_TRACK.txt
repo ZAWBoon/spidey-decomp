@@ -44,8 +44,8 @@ L6 Theater   (levels/theater/)  — abandoned theater vs MYSTERIO
                + curtain swing anchors. 4 thugs, 2 hostages, exit
                (stage door) at full clear. Next: L7 (path open).
 
-ART PASS 0 (procedural, no external assets)
--------------------------------------------
+ART PASS 0 (procedural, no external assets) — DONE
+--------------------------------------------------
 Hero v2 (player/hero_rig.gd): articulated suit with joint pivots
 (hips/torso/head/shoulders/elbows/hips/knees), web-pattern shader on
 red parts (UV fract grid, no fwidth for GL Compatibility safety),
@@ -59,6 +59,9 @@ Thugs (enemies/thug_rig.gd): same joint set + cap; idle look-around,
 patrol/chase run cycle, melee jab (0.3 s pulse on swing), gunner aim
 (gun rides in right hand), stagger flinch, webbed slump. Thug feeds
 speed/state/gun/punch; cocoon + alert label + death tween untouched.
+Thug barks (sfx.gd bark_alert/hurt/attack): synth vocal-ish blips -
+alert replaces the "click" cue, hurt only when the hit does NOT kill
+(down keeps thug_down, no overlap), melee punch grunts at -8 db.
 FX (core/fx.gd): one-shot CPUParticles3D bursts (shared mesh, group
 "vfx", auto-free, validity-guarded) + shockwave rings (torus + fade
 tween). Presets: punch_hit, hit_spark, land_dust, explosion (fire +
@@ -74,13 +77,17 @@ silently ignored if the renderer skips them (no crash risk).
 Boss anims: rhino gallops (diagonal leg pairs via find_children,
 body bounce + forward lean, ground-scrape in PAW, dust puffs while
 charging, stun wobble); venom crouch-runs (low bob + sway, alternating
-leg lifts, arm swings, rear-up windup, lunge lean, spread-eagle retreat).
+leg lifts, arm swings, rear-up windup, lunge lean, spread-eagle retreat);
+scorpion scuttles (alternating leg lifts, tail wag, windup tail-raise
+with stinger quiver, burst recoil pump, slam crouch-raise-crash);
+mysterio hovers (constant float + sway, fluttering cape, floating arms
+with gloves following, cast poses per attack, slam-down on wave,
+full spin while APPEARing - re-faced by taunt after).
 Hostages: 5 shirts x 3 skins x 3 sizes by instance-id hash (levels add
 hostages before positioning, so _ready position is useless - id used).
 Sky (core/sky_deco.gd): one call per level in _build(): night gets moon
 + 46 stars, day gets 7 clouds, docks sunset gets low orange sun + warm
 clouds. Fixed seeds, y 30+, no gameplay impact.
-Next: scorpion/mysterio idle touches, thug voice barks (synth).
 
 SHARED SYSTEMS
 --------------
@@ -99,7 +106,8 @@ props/car.gd — code-built StaticBody3D (no tscn): set paint pre-add;
 props/ — exit_gate (locked/unlocked), barrels, doors; npc/hostage (E rescue).
 ui/hud — bars/counters/prompts + boss bar (show/set/hide_boss).
 autoload/ — game.gd (level flow, input map helpers — keep UNtyped),
-  sfx.gd (procedural WAV synth incl. "roar", "crash", "sting", "poof").
+  sfx.gd (procedural WAV synth: punch/hit/roar/crash/sting/poof,
+  bark_alert/bark_hurt/bark_attack, jingles).
 tools/test_runner.gd — Windows runtime checklist (tp/assert per level);
   bugle stages teleport-driven; boss levels assert boss dormant.
 tools/godot_lint.py — gdparse + tscn checks run here (no engine in sandbox).
@@ -134,8 +142,10 @@ GOTCHAS
   global_position (hostage variants use instance-id hash instead).
 - find_children on code-built nodes needs owned=false (owner is null);
   `as` casts only objects - never `as Vector3` (use typed locals).
+- Mysterio APPEAR spins rig.rotation.y freely; TAUNT re-faces absolutely
+  after, so no drift. Same pattern is safe for any looping rig spin.
 
 NEXT
 ----
-Art Pass 0 cont: scorpion/mysterio idle touches, thug barks.
-Then: real Spidey model (needs user files - see pkr_dump) or L7 DocOck.
+Art Pass 0 DONE. Next: L7 DocOck design (arena + claw attacks + phases)
+or real Spidey model (needs user files - see pkr_dump).
