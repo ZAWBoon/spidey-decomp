@@ -1,7 +1,8 @@
 class_name Thug
 extends CharacterBody3D
 ## Jade-syndicate street thug. Melee or gunner (has_gun), simple FSM AI:
-## idle/patrol -> chase -> attack, plus stagger/stun/death.
+## idle/patrol -> chase -> attack, plus stagger/stun/death. Visuals and
+## procedural animation live in ThugRig (thug_rig.gd), fed state each frame.
 
 signal downed(thug: Thug)
 signal webbed(thug: Thug)
@@ -23,12 +24,14 @@ var patrol_points: Array[Vector3] = []
 
 var state: int = State.IDLE
 var gravity: float = 22.0
+var rig_node: ThugRig = null
 
 var _patrol_i: int = 0
 var _attack_t: float = 0.0
 var _stagger_t: float = 0.0
 var _stun_t: float = 0.0
 var _alert_t: float = 0.0
+var _punch_t: float = 0.0
 var _player = null
 var _cocoon: MeshInstance3D = null
 var _alert_label: Label3D = null
@@ -61,6 +64,7 @@ func _physics_process(delta: float) -> void:
 	elif velocity.y < 0.0:
 		velocity.y = -0.5
 	_alert_t = maxf(0.0, _alert_t - delta)
+	_punch_t = maxf(0.0, _punch_t - delta)
 	if _alert_label != null:
 		_alert_label.visible = _alert_t > 0.0 and state != State.DEAD
 
@@ -89,6 +93,9 @@ func _physics_process(delta: float) -> void:
 			if _stun_t <= 0.0:
 				_cocoon.visible = false
 				state = State.CHASE
+	if rig_node != null:
+		var h_speed := Vector2(velocity.x, velocity.z).length()
+		rig_node.tick(delta, h_speed, state, has_gun, _punch_t / 0.3)
 	move_and_slide()
 
 
@@ -186,6 +193,7 @@ func _tick_attack(delta: float) -> void:
 		if _attack_t <= 0.0:
 			_attack_t = attack_cooldown
 			Sfx.play_at("swing_whoosh", global_position, -4.0)
+			_punch_t = 0.3
 			if dist < attack_range * 1.25:
 				_player.take_hit(damage, self)
 
@@ -263,22 +271,10 @@ func _die() -> void:
 
 # --------------------------------------------------------------------- look --
 func _build_body() -> void:
-	_body_root = Node3D.new()
-	_body_root.name = "Body"
-	rig.add_child(_body_root)
-	var suit := Color(0.16, 0.22, 0.16) if not has_gun else Color(0.25, 0.16, 0.2)
-	var skin := Color(0.85, 0.65, 0.5)
-	var pants := Color(0.1, 0.1, 0.12)
-	var root := _body_root
-	Blockout.capsule_mesh(root, Vector3(0, 1.0, 0), 0.34, 1.05, suit).name = "Torso"
-	Blockout.sphere(root, Vector3(0, 1.68, 0), 0.21, skin).name = "Head"
-	Blockout.capsule_mesh(root, Vector3(-0.2, 0.35, 0), 0.13, 0.7, pants).name = "LegL"
-	Blockout.capsule_mesh(root, Vector3(0.2, 0.35, 0), 0.13, 0.7, pants).name = "LegR"
-	Blockout.capsule_mesh(root, Vector3(-0.44, 1.05, 0), 0.11, 0.6, suit).name = "ArmL"
-	Blockout.capsule_mesh(root, Vector3(0.44, 1.05, 0), 0.11, 0.6, suit).name = "ArmR"
-	if has_gun:
-		Blockout.box(_body_root, Vector3(0.44, 1.15, 0.25), Vector3(0.08, 0.12, 0.4),
-			Color(0.05, 0.05, 0.05), false).name = "Gun"
+	rig_node = ThugRig.new()
+	rig_node.has_gun = has_gun
+	rig.add_child(rig_node)
+	_body_root = rig_node
 	_cocoon = MeshInstance3D.new()
 	var cocoon_mesh := CapsuleMesh.new()
 	cocoon_mesh.radius = 0.55

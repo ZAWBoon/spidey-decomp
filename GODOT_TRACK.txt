@@ -54,7 +54,12 @@ frame, absolute rotations (zeroed first): idle breathe, run cycle
 (scaled by speed), air spread, swing pose (rope arm up), punch blend
 per combo arm, web flick, land crouch, death topple. Player feeds it
 speed/air/swing/attack-blend/web/land/dead; landing detected via
-air->floor edge. Next: thug walk anims, particles pack, lighting pass.
+air->floor edge.
+Thugs (enemies/thug_rig.gd): same joint set + cap; idle look-around,
+patrol/chase run cycle, melee jab (0.3 s pulse on swing), gunner aim
+(gun rides in right hand), stagger flinch, webbed slump. Thug feeds
+speed/state/gun/punch; cocoon + alert label + death tween untouched.
+Next: particles/juice pack, per-level lighting pass.
 
 SHARED SYSTEMS
 --------------
@@ -82,7 +87,7 @@ remake/tools/pkr_dump.py — M2 start: pure-stdlib PKR lister/extractor
 
 VALIDATION (sandbox, no engine)
 -------------------------------
-python3 tools/godot_lint.py  ->  0 errors expected (34 gd / 24 tscn).
+python3 tools/godot_lint.py  ->  0 errors expected (35 gd / 24 tscn).
 gdlint (gdtoolkit)           ->  clean; vars before @onready, no mid-file vars.
 Runtime proof happens on the user's Windows box via test_runner.
 
@@ -105,5 +110,5 @@ GOTCHAS
 
 NEXT
 ----
-Art Pass 0 cont: thug anims, particles/juice pack, per-level lighting.
+Art Pass 0 cont: particles/juice pack, per-level lighting pass.
 Then: real Spidey model (needs user files - see pkr_dump) or L7 DocOck.
