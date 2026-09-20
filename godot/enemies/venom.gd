@@ -25,6 +25,11 @@ var _stagger_t: float = 0.0
 var _retreat_t: float = 0.0
 var _blood_shown: bool = false
 var _body_root: Node3D = null
+var _anim_t: float = 0.0
+var _arm_l: Node3D = null
+var _arm_r: Node3D = null
+var _leg_l: Node3D = null
+var _leg_r: Node3D = null
 
 @onready var rig: Node3D = $Rig
 
@@ -35,6 +40,10 @@ func _ready() -> void:
 	gravity = float(ProjectSettings.get_setting("physics/3d/default_gravity", 22.0))
 	_hp = max_hp
 	_build_body()
+	_arm_l = _body_root.get_node("ArmL") as Node3D
+	_arm_r = _body_root.get_node("ArmR") as Node3D
+	_leg_l = _body_root.get_node("LegL") as Node3D
+	_leg_r = _body_root.get_node("LegR") as Node3D
 	visible = false
 	($CollisionShape3D as CollisionShape3D).disabled = true
 
@@ -102,6 +111,7 @@ func _physics_process(delta: float) -> void:
 			if _retreat_t > 2.5:
 				queue_free()
 	move_and_slide()
+	_animate(delta)
 
 
 func _dist_to_player() -> float:
@@ -178,6 +188,56 @@ func _pop_scale() -> void:
 	var tween := create_tween()
 	tween.tween_property(_body_root, "scale", Vector3(1.1, 0.9, 1.1), 0.06)
 	tween.tween_property(_body_root, "scale", Vector3.ONE, 0.12)
+
+
+# -------------------------------------------------------------------- anim --
+func _animate(delta: float) -> void:
+	if _arm_l == null:
+		return
+	_anim_t += delta
+	var t := _anim_t
+	match state:
+		State.CHASE:
+			_body_root.position.y = -0.25 + 0.1 * sin(t * 10.0)
+			_body_root.rotation.x = 0.15
+			_body_root.rotation.z = 0.08 * sin(t * 5.0)
+			_leg_l.position.y = 0.4 + 0.25 * maxf(0.0, sin(t * 10.0))
+			_leg_r.position.y = 0.4 + 0.25 * maxf(0.0, sin(t * 10.0 + PI))
+			_arm_l.position.z = 0.35 * sin(t * 10.0)
+			_arm_r.position.z = 0.35 * sin(t * 10.0 + PI)
+		State.WINDUP:
+			_body_root.position.y = 0.15
+			_body_root.rotation.x = -0.2
+			_body_root.rotation.z = 0.0
+			_reset_limbs()
+			_arm_l.position = Vector3(-0.58, 1.65, 0)
+			_arm_r.position = Vector3(0.58, 1.65, 0)
+		State.DASH:
+			_body_root.position.y = -0.1
+			_body_root.rotation.x = 0.35
+			_body_root.rotation.z = 0.0
+			_reset_limbs()
+			_arm_l.position = Vector3(-0.58, 1.3, 0.4)
+			_arm_r.position = Vector3(0.58, 1.3, 0.4)
+		State.STAGGER:
+			_body_root.position.y = 0.0
+			_body_root.rotation.x = 0.0
+			_body_root.rotation.z = 0.12 * sin(t * 18.0)
+			_reset_limbs()
+		State.RETREAT:
+			_body_root.position.y = 0.0
+			_body_root.rotation.x = -0.5
+			_body_root.rotation.z = 0.0
+			_reset_limbs()
+			_arm_l.position = Vector3(-0.9, 1.6, 0)
+			_arm_r.position = Vector3(0.9, 1.6, 0)
+
+
+func _reset_limbs() -> void:
+	_leg_l.position = Vector3(-0.26, 0.4, 0)
+	_leg_r.position = Vector3(0.26, 0.4, 0)
+	_arm_l.position = Vector3(-0.58, 1.3, 0)
+	_arm_r.position = Vector3(0.58, 1.3, 0)
 
 
 # --------------------------------------------------------------------- look --

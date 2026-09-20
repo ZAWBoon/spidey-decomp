@@ -65,14 +65,22 @@ tween). Presets: punch_hit, hit_spark, land_dust, explosion (fire +
 smoke + sparks + ring), poof, sparkle, trail_puff, splash. Wired:
 player landing, thug hits, rhino stun (burst + ring), scorpion slam
 (burst + r6 ring), mysterio reappear (poof + ring), barrels, hostage
-rescue, pickups, exit unlock, bomb defuse, docks splash. Only safe
-particle props used (amount/lifetime/one_shot/velocity/gravity/
-scale/color/draw_pass_1 - no curves/damping).
+rescue, pickups, exit unlock, bomb defuse, docks splash + rhino
+charge dust trail. Only safe particle props used
+(amount/lifetime/one_shot/velocity/gravity/scale/color/draw_pass_1).
 Lighting: all 7 levels got glow (bloom 0.3 day - 0.55 theater) +
 adjustment (sat 1.1-1.15, contrast 1.05) in their Environment;
 silently ignored if the renderer skips them (no crash risk).
-Next: boss anim touches (rhino gallop, venom crouch-walk), hostage
-variants, skybox interest (moon/clouds), thug voice barks (synth).
+Boss anims: rhino gallops (diagonal leg pairs via find_children,
+body bounce + forward lean, ground-scrape in PAW, dust puffs while
+charging, stun wobble); venom crouch-runs (low bob + sway, alternating
+leg lifts, arm swings, rear-up windup, lunge lean, spread-eagle retreat).
+Hostages: 5 shirts x 3 skins x 3 sizes by instance-id hash (levels add
+hostages before positioning, so _ready position is useless - id used).
+Sky (core/sky_deco.gd): one call per level in _build(): night gets moon
++ 46 stars, day gets 7 clouds, docks sunset gets low orange sun + warm
+clouds. Fixed seeds, y 30+, no gameplay impact.
+Next: scorpion/mysterio idle touches, thug voice barks (synth).
 
 SHARED SYSTEMS
 --------------
@@ -100,7 +108,7 @@ remake/tools/pkr_dump.py — M2 start: pure-stdlib PKR lister/extractor
 
 VALIDATION (sandbox, no engine)
 -------------------------------
-python3 tools/godot_lint.py  ->  0 errors expected (36 gd / 24 tscn).
+python3 tools/godot_lint.py  ->  0 errors expected (37 gd / 24 tscn).
 gdlint (gdtoolkit)           ->  clean; vars before @onready, no mid-file vars.
 Runtime proof happens on the user's Windows box via test_runner.
 
@@ -122,8 +130,12 @@ GOTCHAS
   standard features (web shader avoids fwidth; FX avoids curves/damping).
 - edit_file fuzzy-matches whitespace: after single-line-anchor edits,
   verify indentation with sed (docks splash needed a fix once).
+- Levels add_child() actors BEFORE setting positions: _ready cannot use
+  global_position (hostage variants use instance-id hash instead).
+- find_children on code-built nodes needs owned=false (owner is null);
+  `as` casts only objects - never `as Vector3` (use typed locals).
 
 NEXT
 ----
-Art Pass 0 cont: boss anim touches, hostage variants, sky interest.
+Art Pass 0 cont: scorpion/mysterio idle touches, thug barks.
 Then: real Spidey model (needs user files - see pkr_dump) or L7 DocOck.

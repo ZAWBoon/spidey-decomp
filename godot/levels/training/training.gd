@@ -17,6 +17,7 @@ var _jump_seen: bool = false
 
 
 func _build() -> void:
+	SkyDeco.day(self)
 	level_id = "training"
 	level_name = "Training Yard"
 	next_level_path = "res://levels/bank/bank.tscn"

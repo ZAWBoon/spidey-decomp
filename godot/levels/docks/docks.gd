@@ -22,6 +22,7 @@ var _exit: ExitGate = null
 
 
 func _build() -> void:
+	SkyDeco.sunset(self)
 	level_id = "docks"
 	level_name = "Level 2: Docks"
 	next_level_path = "res://levels/bugle/bugle.tscn"

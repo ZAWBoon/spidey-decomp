@@ -16,6 +16,7 @@ var _exit: ExitGate = null
 
 
 func _build() -> void:
+	SkyDeco.day(self)
 	level_id = "streets"
 	level_name = "Level 4: Streets"
 	next_level_path = "res://levels/roofs/roofs.tscn"

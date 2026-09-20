@@ -26,6 +26,10 @@ var _hit_done: bool = false
 var _enraged: bool = false
 var _player = null
 var _body_root: Node3D = null
+var _anim_t: float = 0.0
+var _dust_t: float = 0.0
+var _legs: Array = []
+var _leg_base: Array = []
 
 @onready var rig: Node3D = $Rig
 @onready var health: Health = $Health
@@ -35,11 +39,15 @@ func _ready() -> void:
 	add_to_group("enemies")
 	add_to_group("rhino")
 	gravity = float(ProjectSettings.get_setting("physics/3d/default_gravity", 22.0))
+
 	health.max_hp = max_hp
 	health.reset()
 	health.died.connect(_die)
 	health.changed.connect(_on_hp_changed)
 	_build_body()
+	_legs = _body_root.find_children("Leg", "MeshInstance3D", false, false)
+	for leg in _legs:
+		_leg_base.append((leg as Node3D).position)
 
 
 func _physics_process(delta: float) -> void:
@@ -72,6 +80,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	if state == State.CHARGE:
 		_check_charge_hits()
+	_animate(delta)
 
 
 func activate() -> void:
@@ -231,6 +240,61 @@ func _die() -> void:
 	tip.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	tween.tween_property(rig, "position:y", 0.7, 0.5)
 	downed.emit()
+
+
+# -------------------------------------------------------------------- anim --
+func _animate(delta: float) -> void:
+	_anim_t += delta
+	if state == State.CHARGE:
+		_gallop(delta)
+		return
+	_body_root.position.y = 0.0
+	_body_root.rotation.x = 0.0
+	_body_root.rotation.z = 0.0
+	_reset_legs()
+	match state:
+		State.DORMANT:
+			_body_root.position.y = 0.05 * sin(_anim_t * 2.0)
+		State.PAW:
+			_body_root.rotation.x = 0.07 * sin(_anim_t * 10.0)
+			if _legs.size() == 4:
+				var scrape := 0.35 * maxf(0.0, sin(_anim_t * 10.0))
+				var b1: Vector3 = _leg_base[1]
+				var b3: Vector3 = _leg_base[3]
+				(_legs[1] as Node3D).position.z = b1.z - scrape
+				(_legs[3] as Node3D).position.z = b3.z - scrape
+		State.WALLSTUN:
+			_body_root.rotation.z = 0.06 * sin(_anim_t * 6.0)
+		State.STAGGER:
+			_body_root.rotation.z = 0.1 * sin(_anim_t * 20.0)
+
+
+func _gallop(delta: float) -> void:
+	var ph := _anim_t * 14.0
+	_body_root.position.y = 0.18 * absf(sin(ph))
+	_body_root.rotation.x = 0.12 + 0.05 * sin(ph)
+	_body_root.rotation.z = 0.0
+	if _legs.size() == 4:
+		var a := 0.35 * maxf(0.0, sin(ph))
+		var b := 0.35 * maxf(0.0, sin(ph + PI))
+		var l0: Vector3 = _leg_base[0]
+		var l1: Vector3 = _leg_base[1]
+		var l2: Vector3 = _leg_base[2]
+		var l3: Vector3 = _leg_base[3]
+		(_legs[0] as Node3D).position.y = l0.y + a
+		(_legs[3] as Node3D).position.y = l3.y + a
+		(_legs[1] as Node3D).position.y = l1.y + b
+		(_legs[2] as Node3D).position.y = l2.y + b
+	_dust_t -= delta
+	if _dust_t <= 0.0:
+		_dust_t = 0.12
+		var puff_pos := global_position + Vector3(0, 0.4, 0)
+		FX.trail_puff(get_tree().current_scene, puff_pos, Color(0.6, 0.55, 0.5))
+
+
+func _reset_legs() -> void:
+	for i in _legs.size():
+		(_legs[i] as Node3D).position = _leg_base[i]
 
 
 # --------------------------------------------------------------------- look --

@@ -21,6 +21,7 @@ var _zone_c_announced: bool = false
 
 
 func _build() -> void:
+	SkyDeco.day(self)
 	level_id = "bank"
 	level_name = "Level 1: Bank"
 	next_level_path = "res://levels/docks/docks.tscn"
