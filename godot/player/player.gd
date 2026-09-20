@@ -1,8 +1,9 @@
 class_name Player
 extends CharacterBody3D
-## Spider-Man controller: run/sprint/jump (coyote+buffer), 3-hit combo,
-## web shots (stun), web swinging, hold-to-interact. Visuals + procedural
-## animation live in HeroRig (hero_rig.gd); this feeds it state each frame.
+## Spider-Man controller: run/sprint/jump (coyote+buffer), dodge dash with
+## perfect-dodge slow-mo, 3-hit combo with hit-stop, web shots (stun),
+## web yanks (pull thugs / zip to bosses), web swinging, hold-to-interact.
+## Visuals + procedural animation live in HeroRig (hero_rig.gd).
 
 signal fluid_changed(value: float, maximum: float)
 
@@ -12,6 +13,14 @@ const TURN_SPEED := 12.0
 const JUMP_SPEED := 7.5
 const COYOTE_TIME := 0.12
 const JUMP_BUFFER := 0.12
+const DODGE_SPEED := 14.0
+const DODGE_TIME := 0.22
+const DODGE_CD := 0.5
+const PERFECT_SLOW := 0.25
+const PERFECT_TIME := 0.5
+const YANK_RANGE := 14.0
+const YANK_COST := 15.0
+const YANK_CD := 0.8
 const ATTACK_DAMAGE: Array[float] = [22.0, 22.0, 38.0]
 const ATTACK_TIME: Array[float] = [0.32, 0.32, 0.45]
 const COMBO_WINDOW := 0.9
@@ -48,6 +57,14 @@ var _pending_rope_fix: bool = false
 var _web_t: float = 0.0
 var _land_t: float = 0.0
 var _was_air: bool = false
+var _dodge_t: float = 0.0
+var _dodge_cd: float = 0.0
+var _dodge_dir: Vector3 = Vector3.ZERO
+var _perfect_used: bool = false
+var _yank_cd: float = 0.0
+var _yank_line_t: float = 0.0
+var _yank_b: Vector3 = Vector3.ZERO
+var _hitstop_gen: int = 0
 
 @onready var rig: Node3D = $Rig
 @onready var cam_rig: CameraRig = $CameraRig
@@ -89,6 +106,7 @@ func _physics_process(delta: float) -> void:
 		wish = wish.normalized()
 	var sprinting := Input.is_action_pressed("sprint") and input_vec.length() > 0.1
 
+	_physics_dodge_input(wish)
 	if _swinging:
 		_physics_swing(delta, wish)
 	else:
@@ -96,6 +114,7 @@ func _physics_process(delta: float) -> void:
 
 	_physics_attack(delta)
 	_physics_web()
+	_physics_yank()
 	_physics_swing_input()
 	_physics_interact(delta)
 	_tick_web_regen(delta)
@@ -122,6 +141,10 @@ func _tick_timers(delta: float) -> void:
 	_iframes = maxf(0.0, _iframes - delta)
 	_web_t = maxf(0.0, _web_t - delta)
 	_land_t = maxf(0.0, _land_t - delta)
+	_dodge_t = maxf(0.0, _dodge_t - delta)
+	_dodge_cd = maxf(0.0, _dodge_cd - delta)
+	_yank_cd = maxf(0.0, _yank_cd - delta)
+	_yank_line_t = maxf(0.0, _yank_line_t - delta)
 	if Input.is_action_just_pressed("jump"):
 		_buffer = JUMP_BUFFER
 
@@ -138,6 +161,15 @@ func _tick_hero(delta: float) -> void:
 
 
 func _physics_ground(delta: float, wish: Vector3, sprinting: bool, input_vec: Vector2) -> void:
+	if _dodge_t > 0.0:
+		velocity.x = _dodge_dir.x * DODGE_SPEED
+		velocity.z = _dodge_dir.z * DODGE_SPEED
+		rig.rotation.y += delta * 22.0
+		if not is_on_floor():
+			velocity.y -= gravity * delta
+		elif velocity.y < 0.0:
+			velocity.y = -0.5
+		return
 	var target_speed := SPRINT_SPEED if sprinting else WALK_SPEED
 	var accel := 42.0 if is_on_floor() else 14.0
 	var target_vel := wish * target_speed
@@ -173,6 +205,24 @@ func _angle_diff(from: float, to: float) -> float:
 
 
 # ------------------------------------------------------------------ combat --
+func _physics_dodge_input(wish: Vector3) -> void:
+	if not Input.is_action_just_pressed("dodge"):
+		return
+	if _dodge_cd > 0.0 or _dodge_t > 0.0:
+		return
+	_detach(false)
+	var dir := wish
+	if dir.length() < 0.1:
+		dir = Vector3(sin(rig.rotation.y), 0.0, cos(rig.rotation.y))
+	_dodge_dir = dir.normalized()
+	_dodge_t = DODGE_TIME
+	_dodge_cd = DODGE_CD
+	_perfect_used = false
+	Sfx.play("swing_whoosh", -2.0)
+	FX.trail_puff(get_tree().current_scene, global_position + Vector3(0, 0.3, 0), \
+		Color(0.9, 0.2, 0.25))
+
+
 func _physics_attack(_delta: float) -> void:
 	if Input.is_action_just_pressed("attack") and _attack_t <= 0.0:
 		if _combo_t > 0.0:
@@ -205,6 +255,26 @@ func _physics_attack(_delta: float) -> void:
 	if hit_any:
 		Sfx.play("punch")
 		cam_rig.add_trauma(0.25 + 0.12 * _combo)
+		_hitstop(0.08, 0.05 + 0.02 * _combo)
+
+
+func _hitstop(scale: float, dur: float) -> void:
+	_hitstop_gen += 1
+	var g := _hitstop_gen
+	Engine.time_scale = scale
+	await get_tree().create_timer(dur, true, false, true).timeout
+	if g == _hitstop_gen and not health.is_dead():
+		Engine.time_scale = 1.0
+
+
+func _perfect_dodge() -> void:
+	_hitstop(PERFECT_SLOW, PERFECT_TIME)
+	Sfx.play("perfect")
+	if not _perfect_used:
+		_perfect_used = true
+		add_fluid(25.0)
+		if Game.hud != null:
+			Game.hud.flash_message("PERFECT DODGE! +web", Color(0.4, 1, 1), 1.2)
 
 
 func _physics_web() -> void:
@@ -242,6 +312,61 @@ func _fire_web() -> void:
 func debug_fire_web() -> void:
 	web_fluid = WEB_MAX
 	_fire_web()
+
+
+func _physics_yank() -> void:
+	if not Input.is_action_just_pressed("yank"):
+		return
+	if _yank_cd > 0.0 or health.is_dead():
+		return
+	var target := _find_yank_target()
+	if target == null:
+		return
+	if web_fluid < YANK_COST:
+		Sfx.play("empty")
+		return
+	web_fluid -= YANK_COST
+	_regen_t = 0.0
+	fluid_changed.emit(web_fluid, WEB_MAX)
+	_yank_cd = YANK_CD
+	_detach(false)
+	_yank_b = (target as Node3D).global_position + Vector3(0, 1.2, 0)
+	_yank_line_t = 0.2
+	Sfx.play("yank")
+	if (target as Node).has_method("yank_pull"):
+		var pull: Vector3 = global_position - (target as Node3D).global_position
+		pull.y = 0.0
+		if pull.length() < 0.05:
+			pull = Vector3(0, 0, 1)
+		(target as Variant).yank_pull(pull.normalized())
+	else:
+		var zip: Vector3 = (target as Node3D).global_position - global_position
+		zip.y = 0.0
+		if zip.length() > 0.05:
+			velocity = zip.normalized() * 17.0 + Vector3(0, 3.0, 0)
+
+
+func _find_yank_target() -> Node:
+	var best: Node = null
+	var best_d := YANK_RANGE
+	var fwd := -cam_rig.get_move_basis().z
+	fwd.y = 0.0
+	fwd = fwd.normalized() if fwd.length() > 0.05 else Vector3(0, 0, 1)
+	for node in get_tree().get_nodes_in_group("enemies"):
+		var e := node as Node3D
+		if e == null:
+			continue
+		var to: Vector3 = e.global_position - global_position
+		var dist := to.length()
+		if dist > YANK_RANGE or dist < 1.0:
+			continue
+		to.y = 0.0
+		if to.normalized().dot(fwd) < 0.4:
+			continue
+		if dist < best_d:
+			best = node
+			best_d = dist
+	return best
 
 
 func _tick_web_regen(delta: float) -> void:
@@ -325,6 +450,14 @@ func _update_rope() -> void:
 	if mesh == null:
 		return
 	if not _swinging:
+		if _yank_line_t > 0.0:
+			mesh.clear_surfaces()
+			mesh.surface_begin(Mesh.PRIMITIVE_LINES)
+			mesh.surface_add_vertex(Vector3(0, 1.5, 0))
+			mesh.surface_add_vertex(rope.to_local(_yank_b))
+			mesh.surface_end()
+			_rope_visible = true
+			return
 		if _rope_visible:
 			mesh.clear_surfaces()
 			_rope_visible = false
@@ -385,6 +518,9 @@ func _physics_interact(delta: float) -> void:
 func take_hit(damage: float, _from: Node = null) -> void:
 	if health.is_dead() or _iframes > 0.0:
 		return
+	if _dodge_t > 0.0:
+		_perfect_dodge()
+		return
 	_iframes = 0.6
 	_detach(false)
 	health.take_damage(damage, _from)
@@ -408,6 +544,7 @@ func get_horizontal_speed() -> float:
 
 
 func _on_died() -> void:
+	Engine.time_scale = 1.0
 	_detach(false)
 	input_enabled = false
 	Game.trigger_game_over("Spider-Man is down!")

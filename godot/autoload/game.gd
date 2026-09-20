@@ -12,6 +12,7 @@ signal objective_changed(text: String)
 const ACTION_NAMES: Array[String] = [
 	"move_forward", "move_back", "move_left", "move_right",
 	"jump", "sprint", "attack", "web", "swing", "interact",
+	"dodge", "yank",
 	"pause", "debug",
 ]
 
@@ -61,6 +62,10 @@ func _setup_input() -> void:
 	_add_pad_buttons("swing", [JOY_BUTTON_LEFT_SHOULDER])
 	_add_keys("interact", [KEY_E])
 	_add_pad_buttons("interact", [JOY_BUTTON_Y])
+	_add_keys("dodge", [KEY_C])
+	_add_pad_buttons("dodge", [JOY_BUTTON_RIGHT_SHOULDER])
+	_add_keys("yank", [KEY_Q])
+	_add_pad_buttons("yank", [JOY_BUTTON_RIGHT_STICK])
 	_add_keys("pause", [KEY_ESCAPE, KEY_P])
 	_add_pad_buttons("pause", [JOY_BUTTON_START])
 	_add_keys("debug", [KEY_F1])
@@ -124,6 +129,7 @@ func change_level(scene_path: String) -> void:
 
 
 func _do_change_level(scene_path: String) -> void:
+	Engine.time_scale = 1.0
 	var err := get_tree().change_scene_to_file(scene_path)
 	if err != OK:
 		push_error("Game: cannot load level: " + scene_path)

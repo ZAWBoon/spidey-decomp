@@ -249,6 +249,15 @@ func apply_web(stun_time: float) -> void:
 	webbed.emit(self)
 
 
+func yank_pull(pull_dir: Vector3) -> void:
+	if state == State.DEAD:
+		return
+	state = State.STAGGER
+	_stagger_t = 0.6
+	velocity = pull_dir * 16.0 + Vector3(0, 4.0, 0)
+	Sfx.play_at("bark_hurt", global_position, -4.0)
+
+
 func _pop_scale() -> void:
 	if _body_root == null:
 		return
