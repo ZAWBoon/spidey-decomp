@@ -10,6 +10,8 @@ L0 Training  (levels/training/) — move/jump/punch/web/swing dummies.
                South freerun annex (z 60..90, 8m fence gap): crates,
                pole + swing anchor, dirt patches on main field.
                3 spider-tokens (start, mid-ring swing grab, exit).
+               Freerun TIME TRIAL (5 gates: start -> swing lane ->
+               pit swing-jump -> annex finish), session best on START.
 L1 Bank      (levels/bank/)     — lobby robbery: thugs, hostages, vault exit.
                Records annex north of zone B (8m wall gap, shelves,
                extra web pickup, 2 tokens). Deco: gold wall trim,
@@ -23,6 +25,7 @@ L2 Docks     (levels/docks/)    — sunset yard, pier over water (fall = 10 dmg
                2 medkits, warehouse door opens at 2 hostages + 8 downs.
                East second pier (crates + barrel + token), lamp posts
                on both piers, container-ship backdrop. 5 spider-tokens.
+               4 yard crates converted to smashable Breakables.
 L3 Bugle     (levels/bugle/)    — Daily Bugle at night. Lobby -> newsroom
                (f2) -> JJJ offices (f3) -> roof via rotated-box ramps.
                West alley annex (6m fence gap): dumpsters, parked car,
@@ -38,12 +41,16 @@ L4 Streets   (levels/streets/)  — day avenue vs RHINO (enemies/rhino.*):
                400 HP charger. PAW 0.9 s (tracks) -> CHARGE 15 m/s
                locked (20 dmg + knockback; dodge: dy < 1.0 hits) ->
                wall = 3 s stun. Armor x0.5, stunned x1.5. Enrage < 30 %.
-               Smashes 6 cars, stuns on walls. 4 thugs, 2 hostages,
-               7 ambient civilians. Fountain plaza north (20m cap gap,
-               police line shifted west): fountain, benches, 2 lamp
-               swing anchors, 2 tokens. Deco: crosswalks, newsstand,
-               hydrants. Exit at full clear (5 downs + 2 saved).
-               4 spider-tokens (road, sidewalk, 2 plaza).
+               Smashes 6 cars (plows through Breakables, no stun),
+               stuns on walls. 4 thugs, 2 hostages, 7 ambient
+               civilians. Ambient TRAFFIC: 4 cars, 2 lanes x -8.5/+8.5
+               (layer 4 / mask 2: bumps the player 12 dmg + shove,
+               ghosts parked cars/poles/Rhino). Fountain plaza north
+               (20m cap gap, police line shifted west): fountain,
+               benches, 2 lamp swing anchors, 2 tokens. Deco:
+               crosswalks, newsstand, hydrants. 6 sidewalk Breakables
+               (2 crates, 2 planters, 2 hydrants). Exit at full clear
+               (5 downs + 2 saved). 4 spider-tokens.
 L5 Roofs     (levels/roofs/)    — night rooftops vs SCORPION
                (enemies/scorpion.*): ranged boss, 450 HP. STRAFE at
                10-16 m -> WINDUP 0.6 s -> BURST 3 green bolts (12 dmg).
@@ -54,6 +61,8 @@ L5 Roofs     (levels/roofs/)    — night rooftops vs SCORPION
                respawn covers all. 2 more AC covers, 3 vents, hut
                beacon. 4 thugs, 2 hostages, exit at full clear.
                4 spider-tokens (billboard + mast swing grabs, 2 islands).
+               Rooftop TIME TRIAL (4 gates: main -> east -> south ->
+               finish, routed clear of the Scorpion trigger).
 L6 Theater   (levels/theater/)  — abandoned theater vs MYSTERIO
                (enemies/mysterio.*): illusion boss, 500 HP, never walks.
                Teleports between 5 pedestals (7 s, 4.5 enraged) + 2-3
@@ -77,7 +86,7 @@ ART PASS 0 (procedural, no external assets) — DONE
 Hero v2, thug rig + barks, FX pack, cinematic lighting, all boss anims,
 hostage variants, sky dressing. (Details in git history.)
 
-FEEL PASS 1 (characters & levels) — batches 1-6 DONE
+FEEL PASS 1 (characters & levels) — batches 1-7 DONE
 ------------------------------------------------
 Batch 1 (hero feel): dodge dash (C / RB) + PERFECT DODGE slow-mo,
 hit-stop on connects (generation-guarded), web yank (Q / RS).
@@ -98,7 +107,13 @@ wood, gravel, windows day/night) + one-line dress hook in
 LevelBase._ready. Auto-skins every level: flat neutral boxes get
 tiled ground by color/theme, towers get 4 emissive window facades
 at night. Zero level-file edits, zero gameplay changes.
-Next: traffic + time trials + breakables, then L7 DocOck.
+Batch 7 (traffic + trials + breakables): TrafficCar (avenue lanes,
+bumps player, ghosts props/Rhino), TrialGate (training 5-gate +
+roofs 4-gate time trials, session bests), Breakable (crates 1HP,
+planters 2HP, hydrants + water burst; +25, 30% web drop). Rhino
+plows breakables, barrels chain into them, civilians ignore static
+props. Docks 4 crates converted, streets 6 sidewalk smashables.
+Next: L7 DocOck.
 
 SHARED SYSTEMS
 --------------
@@ -115,12 +130,24 @@ enemies/rhino.*, scorpion.*, mysterio.* — bosses: Health node +
   downed/activated signals, wire downed manually (see GOTCHAS).
   Mysterio clones: same scene, is_clone set pre-add, 1 HP, no
   "mysterio" group, +25 score, uncounted in enemies total. Bosses
-  have no yank_pull/air_pop: immune to pop, yanks zip you.
+  have no yank_pull/air_pop: immune to pop, yanks zip you. Rhino
+  charge smashes Car + Breakable, stuns only on StaticBody3D walls.
 npc/civilian.gd — ambient pedestrian (no tscn): wander/idle/cower,
   group "civilians", layer 0 / mask 1. Home captured first physics
-  frame (levels add before positioning).
+  frame (levels add before positioning). Cower threat check skips
+  non-CharacterBody3D (barrels/breakables are not scary).
 pickups/spider_token.gd — hidden collectible (no tscn): Area3D r1.5,
   layer 8 / mask 2, group "spider_token". +100 score + global #N.
+props/breakable.gd — smashable (no tscn): crate 1HP / planter 2HP /
+  hydrant 1HP + water burst. Joins "enemies" (punches/slams/webs hit
+  it free) + "breakables". +25 score, 30% web-fluid drop. Use spawn().
+props/traffic_car.gd — ambient car (no tscn): AnimatableBody3D loops
+  a straight lane, bumps player (12 dmg + shove, 2 s cooldown).
+  Layer 4 / mask 2: solid to the player, ghost to props + Rhino.
+props/trial_gate.gd — time-trial ring (no tscn): Area3D r2 + torus +
+  label, group "trial_gate". Run state in statics (reset per level
+  load), bests persist per session. Use spawn(). Colors: cyan start,
+  green next, gold cleared, gray waiting.
 core/proc_tex.gd — runtime texture painter (no tscn): 9 seeded
   ImageTextures + dress_level() auto-pass (ground by color/theme,
   emissive window facades on towers at night). Textures cached in
@@ -129,7 +156,8 @@ combat/tracer — enemy bolt (mask 3: player + statics, so cover works);
   set tint + speed pre-add for variants (green/purple bolts).
 props/car.gd — code-built StaticBody3D (no tscn): set paint pre-add;
   smash() disables collision, squashes + darkens, plays "crash".
-props/ — exit_gate (locked/unlocked), barrels, doors; npc/hostage (E rescue).
+props/ — exit_gate (locked/unlocked), barrels (explode() chains into
+  Breakable via `is` branch), doors; npc/hostage (E rescue).
 ui/hud — bars/counters/prompts + boss bar (show/set/hide_boss).
 autoload/ — game.gd (level flow, input map helpers — keep UNtyped;
   actions: move/jump/sprint/attack/web/swing/interact/dodge/yank/
@@ -138,6 +166,7 @@ autoload/ — game.gd (level flow, input map helpers — keep UNtyped;
   slam, jingles).
 tools/test_runner.gd — Windows runtime checklist (tp/assert per level);
   bugle stages teleport-driven; boss levels assert boss dormant.
+  Filters enemies by `is` (Thug/Barrel) so Breakables never skew it.
 tools/godot_lint.py + tools/gd_verify.py — sandbox checks (no engine):
   syntax/style + 10 wiring cross-checks (incl. ProcTex API). Both
   must pass to commit.
@@ -146,7 +175,7 @@ remake/tools/pkr_dump.py — M2 start: pure-stdlib PKR lister/extractor
 
 VALIDATION (sandbox, no engine)
 -------------------------------
-python3 tools/godot_lint.py  ->  0 errors expected (40 gd / 24 tscn).
+python3 tools/godot_lint.py  ->  0 errors expected (43 gd / 24 tscn).
 python3 tools/gd_verify.py   ->  0 failures expected (10 checks).
 gdlint (gdtoolkit)           ->  clean; vars before @onready, no mid-file vars.
 Runtime proof happens on the user's Windows box via test_runner.
@@ -197,8 +226,13 @@ GOTCHAS
   transparent boxes are skipped, so new deco boxes are textured only
   if they look like ground (flat + 8 m + neutral/green/brown) or
   towers (6 m tall + neutral). Keep gameplay paint saturated.
+- "enemies" group doubles as the hittable set: Barrel + Breakable join
+  it so punches/slams/webs/tracers hit them free (layer 5). Anything
+  that must tell actors from props filters by `is` (test_runner does;
+  civilian cower skips non-CharacterBody3D). New breakables: HP via
+  take_hit only, never join "cars"/boss groups.
 
 NEXT
 ----
-Feel Pass 1 batch 7: traffic + time trials + breakables.
-Then L7 DocOck. Real character models/music still need user files.
+L7 DocOck (new boss + level). Then: bank/bugle trials? Real character
+models/music still need user files.

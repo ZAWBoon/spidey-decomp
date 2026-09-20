@@ -29,6 +29,11 @@ func _build() -> void:
 	_build_props()
 	_build_actors()
 	Game.set_objective("Cross the roofs - take down Scorpion!")
+	# Rooftop time trial: main -> east island -> south island -> finish.
+	TrialGate.spawn(self, Vector3(0, 2, 14), 0.0, "roofs", 0, 4)
+	TrialGate.spawn(self, Vector3(SIDE_X, 2, 8), PI * 0.5, "roofs", 1, 4)
+	TrialGate.spawn(self, Vector3(0, 2, 33), 0.0, "roofs", 2, 4)
+	TrialGate.spawn(self, Vector3(-12, 2, 18), 0.0, "roofs", 3, 4)
 
 
 func _build_main_roof() -> void:

@@ -177,7 +177,9 @@ func _tick_charge(delta: float) -> void:
 func _check_charge_hits() -> void:
 	for i in get_slide_collision_count():
 		var collider := get_slide_collision(i).get_collider()
-		if collider is Car:
+		if collider is Breakable:
+			(collider as Breakable).smash()
+		elif collider is Car:
 			(collider as Car).smash()
 		elif collider is StaticBody3D:
 			_wall_stun()

@@ -56,6 +56,8 @@ func explode() -> void:
 			other.take_hit(enemy_damage, self)
 		elif node is Barrel:
 			other.fuse(0.25)
+		elif node is Breakable:
+			other.smash()
 	if Game.player != null:
 		var hero: Variant = Game.player
 		if global_position.distance_to(hero.global_position) <= radius:

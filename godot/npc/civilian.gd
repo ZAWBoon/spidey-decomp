@@ -64,6 +64,8 @@ func _threat_near() -> bool:
 		if global_position.distance_to(pp) < 3.5 and hero.get_horizontal_speed() > 7.0:
 			return true
 	for node in get_tree().get_nodes_in_group("enemies"):
+		if not (node is CharacterBody3D):
+			continue  # Static props (barrels, breakables) are not scary.
 		var e := node as Node3D
 		if e != null and global_position.distance_to(e.global_position) < 7.0:
 			return true

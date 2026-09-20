@@ -30,6 +30,14 @@ func _build() -> void:
 	_build_exit()
 	Blockout.label(self, Vector3(0, 6, 14), "TRAINING YARD", Color(1, 0.9, 0.4), 96)
 	Game.set_objective("Move: WASD / left stick")
+	# Freerun time trial: start -> swing lane -> pit jump -> annex finish.
+	TrialGate.spawn(self, Vector3(0, 2, 10), 0.0, "training", 0, 5)
+	TrialGate.spawn(self, Vector3(0, 2, -20), 0.0, "training", 1, 5)
+	TrialGate.spawn(self, Vector3(0, 2, -60), 0.0, "training", 2, 5)
+	TrialGate.spawn(self, Vector3(0, 2, 68), 0.0, "training", 3, 5)
+	TrialGate.spawn(self, Vector3(0, 2, 86), 0.0, "training", 4, 5)
+	Blockout.label(self, Vector3(0, 5, 10), "TIME TRIAL - race the gates!",
+		Color(0.4, 0.9, 1.0), 64)
 
 
 func _build_ground() -> void:

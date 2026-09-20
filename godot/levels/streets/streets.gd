@@ -27,6 +27,22 @@ func _build() -> void:
 	_build_street_props()
 	_build_actors()
 	Game.set_objective("Head north - stop the Rhino!")
+	# Ambient traffic (lanes at x -8.5/+8.5, clear of parked cars/props).
+	TrafficCar.spawn(self, Vector3(-8.5, 0, -62), Vector3(-8.5, 0, 66),
+		Color(0.7, 0.1, 0.1), 0.0, 11.0)
+	TrafficCar.spawn(self, Vector3(-8.5, 0, -62), Vector3(-8.5, 0, 66),
+		Color(0.1, 0.2, 0.7), 64.0, 11.0)
+	TrafficCar.spawn(self, Vector3(8.5, 0, 66), Vector3(8.5, 0, -62),
+		Color(0.85, 0.65, 0.1), 0.0, 12.0)
+	TrafficCar.spawn(self, Vector3(8.5, 0, 66), Vector3(8.5, 0, -62),
+		Color(0.7, 0.7, 0.72), 64.0, 12.0)
+	# Smashables on the sidewalks.
+	Breakable.spawn(self, Vector3(-15, 0, 12), "crate", 1.5)
+	Breakable.spawn(self, Vector3(15, 0, -48), "crate", 1.5)
+	Breakable.spawn(self, Vector3(-15, 0, -38), "planter", 1.8)
+	Breakable.spawn(self, Vector3(15, 0, 18), "planter", 1.8)
+	Breakable.spawn(self, Vector3(-12, 0, 52), "hydrant")
+	Breakable.spawn(self, Vector3(12, 0, -32), "hydrant")
 
 
 func _build_road() -> void:
