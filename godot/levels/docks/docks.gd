@@ -2,7 +2,8 @@ class_name DocksLevel
 extends LevelBase
 ## Level 2: sunset docks. Clear the yard (2 workers + 8 thugs, one a
 ## bruiser), then enter the warehouse and escape. Cranes and poles are
-## swing anchors; the pier stretches over open water (don't fall in).
+## swing anchors; two piers stretch over open water (don't fall in).
+## 5 spider-tokens hidden around (one at each pier end).
 
 const THUG_SCENE: PackedScene = preload("res://enemies/thug.tscn")
 const HOSTAGE_SCENE: PackedScene = preload("res://npc/hostage.tscn")
@@ -32,6 +33,7 @@ func _build() -> void:
 	_build_warehouse()
 	_build_cranes()
 	_build_crates()
+	_build_tokens()
 	_build_actors()
 	Game.set_objective("Clear the docks: save 2 workers, drop 8 thugs")
 
@@ -57,6 +59,11 @@ func _build_water() -> void:
 	# pier is safe; only a real fall (body bottom under y=-1) fires it.
 	var splash := Blockout.trigger(self, Vector3(0, -2.5, -52), Vector3(160, 3, 64))
 	splash.body_entered.connect(_on_water_body)
+	# Distant container ship (backdrop, far outside the trigger).
+	Blockout.box(self, Vector3(-55, -1, -65), Vector3(30, 6, 12),
+		Color(0.12, 0.16, 0.25), false)
+	Blockout.box(self, Vector3(-60, 3.5, -65), Vector3(8, 3, 10), Color(0.7, 0.15, 0.1), false)
+	Blockout.box(self, Vector3(-52, 3.5, -65), Vector3(8, 3, 10), Color(0.15, 0.5, 0.2), false)
 
 
 func _on_water_body(body: Node3D) -> void:
@@ -77,6 +84,20 @@ func _build_pier() -> void:
 		for pz in [-24.0, -32.0, -40.0]:
 			Blockout.cylinder(self, Vector3(px, -1.5, pz), 0.25, 3.0,
 				Color(0.3, 0.22, 0.15))
+	# East pier: same deck, crates + barrel + token at the far end.
+	Blockout.box(self, Vector3(25, -0.25, -32), Vector3(10, 0.5, 24), wood)
+	for px in [21.0, 29.0]:
+		for pz in [-24.0, -32.0, -40.0]:
+			Blockout.cylinder(self, Vector3(px, -1.5, pz), 0.25, 3.0,
+				Color(0.3, 0.22, 0.15))
+	# Lamp posts on both piers (emissive heads catch the sunset glow).
+	for pos in [Vector3(-4, 0, -24), Vector3(4, 0, -40),
+			Vector3(21, 0, -24), Vector3(29, 0, -40)]:
+		Blockout.cylinder(self, pos + Vector3(0, 1.5, 0), 0.12, 3.0,
+			Color(0.2, 0.2, 0.22))
+		var head := Blockout.sphere(self, pos + Vector3(0, 3.1, 0), 0.22,
+			Color(1, 0.9, 0.7))
+		head.material_override = Blockout.mat_emissive(Color(1, 0.9, 0.7), 2.0)
 
 
 func _build_warehouse() -> void:
@@ -147,8 +168,10 @@ func _build_crates() -> void:
 	_crate(Vector3(-30, 0, 25), 2.2, wood_b)
 	_crate(Vector3(30, 0, 5), 2.2, wood_a)
 	_crate(Vector3(5, 0, -8), 2.0, wood_b)
+	_crate(Vector3(23, 0, -30), 2.0, wood_b)
+	_crate(Vector3(27, 0, -36), 1.6, wood_a)
 	for pos in [Vector3(-19, 0, 5), Vector3(17.5, 0, 15),
-			Vector3(0, 0, -40), Vector3(-28, 0, 28)]:
+			Vector3(0, 0, -40), Vector3(-28, 0, 28), Vector3(25, 0, -24)]:
 		var barrel := BARREL_SCENE.instantiate() as Barrel
 		add_child(barrel)
 		barrel.global_position = pos
@@ -157,6 +180,20 @@ func _build_crates() -> void:
 func _crate(base_pos: Vector3, size: float, color: Color) -> void:
 	Blockout.box(self, base_pos + Vector3(0, size * 0.5, 0),
 		Vector3(size, size, size), color)
+
+
+func _build_tokens() -> void:
+	_spawn_token(Vector3(0, 1.2, -42))
+	_spawn_token(Vector3(-25, 1.2, -5))
+	_spawn_token(Vector3(5, 1.2, 48))
+	_spawn_token(Vector3(25, 1.2, -40))
+	_spawn_token(Vector3(-22, 1.2, 2))
+
+
+func _spawn_token(pos: Vector3) -> void:
+	var token := SpiderToken.new()
+	add_child(token)
+	token.global_position = pos
 
 
 func _build_actors() -> void:
@@ -201,9 +238,9 @@ func _spawn_bruiser(pos: Vector3) -> void:
 	thug.max_hp = 120.0
 	thug.damage = 18.0
 	thug.move_speed = 2.7
+	thug.scale = Vector3(1.3, 1.3, 1.3)
 	add_child(thug)
 	thug.global_position = pos
-	thug.scale = Vector3(1.3, 1.3, 1.3)
 	Blockout.label(thug, Vector3(0, 2.2, 0), "BRUISER", Color(1, 0.4, 0.3), 56)
 
 

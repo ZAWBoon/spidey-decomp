@@ -2,7 +2,8 @@ class_name BankLevel
 extends LevelBase
 ## Level 1: bank heist in three gated zones.
 ## A) Lobby: rescue 3 hostages + drop 4 thugs. B) Vault hall: drop 5 thugs.
-## C) Back room: defuse the bomb, then escape.
+## C) Back room: defuse the bomb, then escape. Records annex hides
+## north of zone B (extra pickup + 2 tokens). 5 spider-tokens total.
 
 const THUG_SCENE: PackedScene = preload("res://enemies/thug.tscn")
 const HOSTAGE_SCENE: PackedScene = preload("res://npc/hostage.tscn")
@@ -26,6 +27,7 @@ func _build() -> void:
 	level_name = "Level 1: Bank"
 	next_level_path = "res://levels/docks/docks.tscn"
 	_build_shell()
+	_build_annex()
 	_build_zone_a()
 	_build_zone_b()
 	_build_zone_c()
@@ -38,9 +40,13 @@ func _build_shell() -> void:
 	Blockout.box(self, Vector3(0, -0.5, 0), Vector3(40, 1, 30), floor_mat)
 	Blockout.box(self, Vector3(38.5, -0.5, 0), Vector3(33, 1, 30), floor_mat)
 	Blockout.box(self, Vector3(67.5, -0.5, 0), Vector3(21, 1, 30), floor_mat)
-	# North + south perimeter.
-	Blockout.box(self, Vector3(29, 3, -15), Vector3(98, 6, 1), wall_mat)
+	# North perimeter in two runs: 8m gap (x 32..40) into the annex.
+	Blockout.box(self, Vector3(6, 3, -15), Vector3(52, 6, 1), wall_mat)
+	Blockout.box(self, Vector3(59, 3, -15), Vector3(38, 6, 1), wall_mat)
+	# South perimeter + gold trim.
 	Blockout.box(self, Vector3(29, 3, 15), Vector3(98, 6, 1), wall_mat)
+	Blockout.box(self, Vector3(29, 2.5, 14.4), Vector3(98, 0.3, 0.2),
+		Color(0.85, 0.65, 0.15), false)
 	# West + east perimeter.
 	Blockout.box(self, Vector3(-20, 3, 0), Vector3(1, 6, 30), wall_mat)
 	Blockout.box(self, Vector3(78, 3, 0), Vector3(1, 6, 30), wall_mat)
@@ -48,6 +54,25 @@ func _build_shell() -> void:
 	_gate_a = _dividing_wall(21.0, wall_mat)
 	_gate_b = _dividing_wall(56.0, wall_mat)
 	Blockout.label(self, Vector3(0, 5.2, -12), "FIRST NATIONAL BANK", Color(1, 0.85, 0.4), 80)
+
+
+func _build_annex() -> void:
+	# Records annex: open-top side room north of zone B (no enemies:
+	# zone gating counts stay untouched).
+	var floor_mat := Color(0.38, 0.36, 0.34)
+	var wall_mat := Color(0.5, 0.47, 0.4)
+	Blockout.box(self, Vector3(36, -0.5, -22.5), Vector3(20, 1, 15), floor_mat)
+	Blockout.box(self, Vector3(36, 3, -30), Vector3(21, 6, 1), wall_mat)
+	Blockout.box(self, Vector3(26, 3, -22.5), Vector3(1, 6, 16), wall_mat)
+	Blockout.box(self, Vector3(46, 3, -22.5), Vector3(1, 6, 16), wall_mat)
+	var shelf := Color(0.35, 0.25, 0.15)
+	for pos in [Vector3(30, 0, -27), Vector3(36, 0, -27), Vector3(42, 0, -27)]:
+		Blockout.box(self, pos + Vector3(0, 1.0, 0), Vector3(3, 2, 1), shelf)
+	Blockout.label(self, Vector3(36, 4.4, -22), "RECORDS ANNEX", Color(0.7, 0.85, 1), 56)
+	Blockout.omni(self, Vector3(36, 5, -22))
+	_spawn_pickup(Vector3(36, 0, -18))
+	_spawn_token(Vector3(32, 1.2, -25))
+	_spawn_token(Vector3(40, 1.2, -20))
 
 
 func _dividing_wall(x: float, color: Color) -> Node3D:
@@ -92,6 +117,8 @@ func _build_zone_a() -> void:
 	for pos in [Vector3(-8, 0, -7), Vector3(-8, 0, 7), Vector3(8, 0, -7), Vector3(8, 0, 7)]:
 		Blockout.cylinder(self, pos + Vector3(0, 3, 0), 0.6, 6.0, Color(0.6, 0.58, 0.5))
 	Blockout.box(self, Vector3(-10, 0.6, 0), Vector3(8, 1.2, 1.6), Color(0.35, 0.25, 0.15))
+	for bx in [-13.0, -11.0, -9.0, -7.0]:
+		Blockout.cylinder(self, Vector3(bx, 1.8, 0), 0.05, 1.2, Color(0.7, 0.7, 0.72))
 	Blockout.label(self, Vector3(-10, 2.4, 0), "TELLERS", Color.WHITE, 48)
 	for pos in [Vector3(-14, 0, -8), Vector3(-14, 0, 8), Vector3(5, 0, 10)]:
 		_spawn_hostage(pos)
@@ -99,6 +126,7 @@ func _build_zone_a() -> void:
 	for pos in thugs:
 		_spawn_thug(pos, false)
 	_spawn_pickup(Vector3(0, 0, -12))
+	_spawn_token(Vector3(-10, 1.6, 0))
 	Blockout.omni(self, Vector3(0, 5, 0))
 	Blockout.omni(self, Vector3(-12, 5, 8))
 
@@ -108,12 +136,16 @@ func _build_zone_b() -> void:
 	Blockout.label(self, Vector3(38, 4.6, -13.4), "VAULT", Color(1, 0.85, 0.4), 56)
 	Blockout.box(self, Vector3(30, 0.5, 6), Vector3(4, 1, 2), Color(0.35, 0.25, 0.15))
 	Blockout.box(self, Vector3(46, 0.5, -6), Vector3(4, 1, 2), Color(0.35, 0.25, 0.15))
+	var cash := Color(0.2, 0.55, 0.25)
+	Blockout.box(self, Vector3(30, 1.2, 6), Vector3(1.2, 0.4, 0.8), cash, false)
+	Blockout.box(self, Vector3(46, 1.2, -6), Vector3(1.2, 0.4, 0.8), cash, false)
 	for pos in [Vector3(28, 0, -4), Vector3(36, 0, 6), Vector3(46, 0, 0)]:
 		_spawn_thug(pos, false)
 	for pos in [Vector3(32, 0, -10), Vector3(50, 0, 10)]:
 		_spawn_thug(pos, true)
 	_spawn_pickup(Vector3(30, 0, 10))
 	_spawn_pickup(Vector3(48, 0, -10))
+	_spawn_token(Vector3(38, 1.2, -12))
 	Blockout.omni(self, Vector3(38, 5, 0))
 
 
@@ -125,6 +157,10 @@ func _build_zone_c() -> void:
 	_bomb.global_position = Vector3(70, 0, 0)
 	_spawn_thug(Vector3(63, 0, -6), false)
 	_spawn_thug(Vector3(63, 0, 6), true)
+	var crate := Color(0.5, 0.38, 0.22)
+	Blockout.box(self, Vector3(64, 0.75, 10), Vector3(1.5, 1.5, 1.5), crate)
+	Blockout.box(self, Vector3(66, 0.6, 10.5), Vector3(1.2, 1.2, 1.2), crate)
+	_spawn_token(Vector3(72, 1.2, 5))
 	_exit = EXIT_SCENE.instantiate() as ExitGate
 	add_child(_exit)
 	_exit.global_position = Vector3(75, 0, 0)
@@ -151,6 +187,12 @@ func _spawn_pickup(pos: Vector3) -> void:
 	var pickup := PICKUP_SCENE.instantiate() as WebPickup
 	add_child(pickup)
 	pickup.global_position = pos
+
+
+func _spawn_token(pos: Vector3) -> void:
+	var token := SpiderToken.new()
+	add_child(token)
+	token.global_position = pos
 
 
 func _process(delta: float) -> void:

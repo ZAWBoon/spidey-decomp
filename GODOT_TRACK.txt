@@ -7,12 +7,22 @@ Built level by level; this file tracks Godot-side progress.
 LEVELS (all playable from the title menu)
 ----------------------------------------
 L0 Training  (levels/training/) — move/jump/punch/web/swing dummies.
+               South freerun annex (z 60..90, 8m fence gap): crates,
+               pole + swing anchor, dirt patches on main field.
+               3 spider-tokens (start, mid-ring swing grab, exit).
 L1 Bank      (levels/bank/)     — lobby robbery: thugs, hostages, vault exit.
+               Records annex north of zone B (8m wall gap, shelves,
+               extra web pickup, 2 tokens). Deco: gold wall trim,
+               teller bars, cash stacks, back-room crates.
+               5 spider-tokens (1 per zone + 2 annex).
 L2 Docks     (levels/docks/)    — sunset yard, pier over water (fall = 10 dmg
                + respawn), 2 cranes + 2 poles, 8 thugs incl. bruiser
-               (hp120/dmg18/scale 1.3), 2 hostages, 4 chain-exploding
+               (hp120/dmg18/scale 1.3, scale now pre-add so the bruiser
+               rig variant applies), 2 hostages, 5 chain-exploding
                barrels (fuse 0.25s, radius 6, 60 enemy / 25 player dmg),
                2 medkits, warehouse door opens at 2 hostages + 8 downs.
+               East second pier (crates + barrel + token), lamp posts
+               on both piers, container-ship backdrop. 5 spider-tokens.
 L3 Bugle     (levels/bugle/)    — Daily Bugle at night. Lobby -> newsroom
                (f2) -> JJJ offices (f3) -> roof via rotated-box ramps.
                6 thugs (2 gun, gun hp 40), 3 hostages. Player y > 4 drops
@@ -49,22 +59,21 @@ ART PASS 0 (procedural, no external assets) — DONE
 Hero v2, thug rig + barks, FX pack, cinematic lighting, all boss anims,
 hostage variants, sky dressing. (Details in git history.)
 
-FEEL PASS 1 (characters & levels) — batches 1-3 DONE
+FEEL PASS 1 (characters & levels) — batches 1-4 DONE
 ------------------------------------------------
 Batch 1 (hero feel): dodge dash (C / RB) + PERFECT DODGE slow-mo,
 hit-stop on connects (generation-guarded), web yank (Q / RS).
 Batch 2 (Hero v3 + air game): v3 look, launcher (Shift+attack), air
 juggles, finishers vs stagger/stun, ground slam (S+attack mid-air).
-Batch 3 (Thug v2 + life + verification): rig variants - melee (3
-jacket tints), gunner (dark coat), bruiser (1.3x bulk, guard pose,
-angry brow, no cap; auto when scale.x > 1.15). Civilians
-(npc/civilian.gd, code-built): wander + idle + cower (enemies < 7 m
-or sprinting player < 3.5 m), 5 shirts x 3 skins x 3 sizes, ghost
-vs actors (layer 0) / solid vs world (mask 1); 5 roam the streets
-sidewalks. gd_verify.py: 10 static cross-checks (sounds, inputs,
-APIs, rig arity, enums, groups, has_method, classes, onready paths,
-signals) - runs with every commit from now on.
-Next: L0-L2 widen + spider-tokens.
+Batch 3 (Thug v2 + life + verification): rig variants (melee/gunner/
+bruiser), civilians, gd_verify.py (10 checks, gates every commit).
+Batch 4 (L0-L2 widen + tokens): training freerun annex + dirt;
+bank records annex + trim/bars/cash/crates; docks east pier + lamps
++ ship backdrop + 5th barrel. SpiderToken (code-built Area3D):
+spinning gold coin + red gem, r1.5 grab, +100 score, global #N via
+Game.tokens_found, sparkle + HUD flash. 13 tokens: L0 x3, L1 x5,
+L2 x5. Annexes hold zero enemies (gating counts untouched).
+Next: L3-L6 widen + tokens.
 
 SHARED SYSTEMS
 --------------
@@ -76,7 +85,7 @@ player/ — CharacterBody3D: walk 6 / sprint 9.5, jump 7.5 (~1.28 m),
 enemies/thug.* — melee/gun AI: IDLE/PATROL/CHASE/ATTACK; patrol_points
   MUST be set BEFORE add_child (Thug._ready reads them). yank_pull()
   + air_pop(power). Rig variant auto: gunner if has_gun, bruiser if
-  scale.x > 1.15 (docks bruiser), else melee with jacket variety.
+  scale.x > 1.15 (set scale PRE-add: docks bruiser fixed).
 enemies/rhino.*, scorpion.*, mysterio.* — bosses: Health node +
   downed/activated signals, boss bar via hud; wire downed manually
   (see GOTCHAS). Mysterio clones: same scene, is_clone set pre-add,
@@ -85,6 +94,8 @@ enemies/rhino.*, scorpion.*, mysterio.* — bosses: Health node +
 npc/civilian.gd — ambient pedestrian (no tscn): wander/idle/cower,
   group "civilians", layer 0 / mask 1. Home captured first physics
   frame (levels add before positioning).
+pickups/spider_token.gd — hidden collectible (no tscn): Area3D r1.5,
+  layer 8 / mask 2, group "spider_token". +100 score + global #N.
 combat/tracer — enemy bolt (mask 3: player + statics, so cover works);
   set tint + speed pre-add for variants (green/purple bolts).
 props/car.gd — code-built StaticBody3D (no tscn): set paint pre-add;
@@ -93,8 +104,9 @@ props/ — exit_gate (locked/unlocked), barrels, doors; npc/hostage (E rescue).
 ui/hud — bars/counters/prompts + boss bar (show/set/hide_boss).
 autoload/ — game.gd (level flow, input map helpers — keep UNtyped;
   actions: move/jump/sprint/attack/web/swing/interact/dodge/yank/
-  pause/debug), sfx.gd (procedural WAV synth: punch/hit/roar/crash/
-  sting/poof, bark_* x3, yank/perfect/launch/slam, jingles).
+  pause/debug; tokens_found counter), sfx.gd (procedural WAV synth:
+  punch/hit/roar/crash/sting/poof, bark_* x3, yank/perfect/launch/
+  slam, jingles).
 tools/test_runner.gd — Windows runtime checklist (tp/assert per level);
   bugle stages teleport-driven; boss levels assert boss dormant.
 tools/godot_lint.py + tools/gd_verify.py — sandbox checks (no engine):
@@ -104,7 +116,7 @@ remake/tools/pkr_dump.py — M2 start: pure-stdlib PKR lister/extractor
 
 VALIDATION (sandbox, no engine)
 -------------------------------
-python3 tools/godot_lint.py  ->  0 errors expected (38 gd / 24 tscn).
+python3 tools/godot_lint.py  ->  0 errors expected (39 gd / 24 tscn).
 python3 tools/gd_verify.py   ->  0 failures expected (10 checks).
 gdlint (gdtoolkit)           ->  clean; vars before @onready, no mid-file vars.
 Runtime proof happens on the user's Windows box via test_runner.
@@ -142,9 +154,12 @@ GOTCHAS
   enum access). Bosses use different State enums - never compare them.
 - collision_layer = 0 is a valid ghost (detected by nothing); the mask
   still drives move_and_slide (civilian: layer 0 / mask 1).
+- Annex/side areas must hold ZERO enemies unless gating counts are
+  updated too (bank annex, training pad are enemy-free by design).
+- Thug rig variant reads scale.x in _ready: set scale BEFORE add_child
+  (docks bruiser was post-add and silently missed bruiser styling).
 
 NEXT
 ----
-Feel Pass 1 batch 4: L0-L2 widen + spider-tokens.
-Then: L3-L6 widen + tokens, traffic + time trials + breakables.
-L7 DocOck after.
+Feel Pass 1 batch 5: L3-L6 widen + tokens.
+Then: traffic + time trials + breakables. L7 DocOck after.

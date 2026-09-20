@@ -1,7 +1,8 @@
 class_name TrainingLevel
 extends LevelBase
 ## Level 0: outdoor training yard. Teaches move/jump/punch/web/swing,
-## then a ring run and an exit gate.
+## then a ring run and an exit gate. South annex: freerun pad with
+## crates, a pole and a token. 3 spider-tokens hidden around.
 
 const THUG_SCENE: PackedScene = preload("res://enemies/thug.tscn")
 const PICKUP_SCENE: PackedScene = preload("res://pickups/web_pickup.tscn")
@@ -24,6 +25,8 @@ func _build() -> void:
 	_build_ground()
 	_build_dummies()
 	_build_swing_lane()
+	_build_side_pad()
+	_build_tokens()
 	_build_exit()
 	Blockout.label(self, Vector3(0, 6, 14), "TRAINING YARD", Color(1, 0.9, 0.4), 96)
 	Game.set_objective("Move: WASD / left stick")
@@ -36,9 +39,14 @@ func _build_ground() -> void:
 	Blockout.box(self, Vector3(0, -0.5, -74), Vector3(120, 1, 52), grass)
 	# Pit visual under the 8m gap.
 	Blockout.box(self, Vector3(0, -8, -44), Vector3(120, 1, 8), Color(0.02, 0.02, 0.04), false)
-	# Boundary fences.
+	# Dirt patches (thin, coplanar-safe).
+	var dirt := Color(0.45, 0.35, 0.22)
+	Blockout.box(self, Vector3(-20, 0.02, 20), Vector3(18, 0.04, 14), dirt, false)
+	Blockout.box(self, Vector3(25, 0.02, -10), Vector3(22, 0.04, 16), dirt, false)
+	# Boundary fences (south fence has a 8m gap to the side pad).
 	var fence := Color(0.5, 0.5, 0.55)
-	Blockout.box(self, Vector3(0, 1.5, 60), Vector3(120, 3, 1), fence)
+	Blockout.box(self, Vector3(-32, 1.5, 60), Vector3(56, 3, 1), fence)
+	Blockout.box(self, Vector3(32, 1.5, 60), Vector3(56, 3, 1), fence)
 	Blockout.box(self, Vector3(0, 1.5, -100), Vector3(120, 3, 1), fence)
 	Blockout.box(self, Vector3(-60, 1.5, -20), Vector3(1, 3, 160), fence)
 	Blockout.box(self, Vector3(60, 1.5, -20), Vector3(1, 3, 160), fence)
@@ -111,6 +119,35 @@ func _on_ring_body(body: Node3D, ring_i: int, ring: MeshInstance3D) -> void:
 	ring.material_override = Blockout.mat_emissive(Color(0.3, 1.0, 0.4), 1.5)
 	Sfx.play("pickup")
 	_refresh_objective()
+
+
+func _build_side_pad() -> void:
+	# South freerun annex (z 60..90) behind the fence gap.
+	Blockout.box(self, Vector3(0, -0.5, 75), Vector3(60, 1, 30), Color(0.3, 0.36, 0.3))
+	var fence := Color(0.5, 0.5, 0.55)
+	Blockout.box(self, Vector3(0, 1.5, 90), Vector3(60, 3, 1), fence)
+	Blockout.box(self, Vector3(-30, 1.5, 75), Vector3(1, 3, 30), fence)
+	Blockout.box(self, Vector3(30, 1.5, 75), Vector3(1, 3, 30), fence)
+	var crate := Color(0.5, 0.38, 0.22)
+	for pos in [Vector3(-12, 0, 70), Vector3(-8, 0, 72), Vector3(8, 0, 78), Vector3(12, 0, 74)]:
+		Blockout.box(self, pos + Vector3(0, 0.6, 0), Vector3(1.2, 1.2, 1.2), crate)
+	Blockout.cylinder(self, Vector3(0, 5.5, 82), 0.3, 11.0, Color(0.45, 0.45, 0.5))
+	var anchor := SwingAnchor.new()
+	add_child(anchor)
+	anchor.global_position = Vector3(0, 11.0, 82)
+	Blockout.label(self, Vector3(0, 4, 75), "FREERUN PAD", Color(0.6, 0.9, 1), 64)
+
+
+func _build_tokens() -> void:
+	_spawn_token(Vector3(6, 1.2, 12))
+	_spawn_token(Vector3(0, 6.0, -26))
+	_spawn_token(Vector3(3, 1.2, -88))
+
+
+func _spawn_token(pos: Vector3) -> void:
+	var token := SpiderToken.new()
+	add_child(token)
+	token.global_position = pos
 
 
 func _build_exit() -> void:

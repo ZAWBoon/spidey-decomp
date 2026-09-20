@@ -22,6 +22,7 @@ var level: LevelBase = null
 var player = null
 var hud: HUD = null
 var score: int = 0
+var tokens_found: int = 0
 var level_start_msec: int = 0
 var is_active: bool = false
 
