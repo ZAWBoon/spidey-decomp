@@ -25,24 +25,35 @@ L2 Docks     (levels/docks/)    — sunset yard, pier over water (fall = 10 dmg
                on both piers, container-ship backdrop. 5 spider-tokens.
 L3 Bugle     (levels/bugle/)    — Daily Bugle at night. Lobby -> newsroom
                (f2) -> JJJ offices (f3) -> roof via rotated-box ramps.
-               6 thugs (2 gun, gun hp 40), 3 hostages. Player y > 4 drops
-               VENOM (enemies/venom.*): unkillable chaser, 800 HP floored
-               at 1, chase 7.2 (walk 6 < v < sprint 9.5), lunge < 4 m
-               (25 dmg + knockback), enrage tiers, webs = slow only.
+               West alley annex (6m fence gap): dumpsters, parked car,
+               news box, web pickup, token. Deco: lobby rug, desk
+               papers, JJJ shelf + books. 6 thugs (2 gun, gun hp 40),
+               3 hostages. Player y > 4 drops VENOM (enemies/venom.*):
+               unkillable chaser, 800 HP floored at 1, chase 7.2
+               (walk 6 < v < sprint 9.5), lunge < 4 m (25 dmg +
+               knockback), enrage tiers, webs = slow only.
                Roof (y > 13.5) unlocks EXIT + Venom retreat-leap.
+               5 spider-tokens (alley, street, F2, F3, roof globe).
 L4 Streets   (levels/streets/)  — day avenue vs RHINO (enemies/rhino.*):
                400 HP charger. PAW 0.9 s (tracks) -> CHARGE 15 m/s
                locked (20 dmg + knockback; dodge: dy < 1.0 hits) ->
                wall = 3 s stun. Armor x0.5, stunned x1.5. Enrage < 30 %.
                Smashes 6 cars, stuns on walls. 4 thugs, 2 hostages,
-               5 ambient civilians. Exit at full clear (5 downs + 2 saved).
+               7 ambient civilians. Fountain plaza north (20m cap gap,
+               police line shifted west): fountain, benches, 2 lamp
+               swing anchors, 2 tokens. Deco: crosswalks, newsstand,
+               hydrants. Exit at full clear (5 downs + 2 saved).
+               4 spider-tokens (road, sidewalk, 2 plaza).
 L5 Roofs     (levels/roofs/)    — night rooftops vs SCORPION
                (enemies/scorpion.*): ranged boss, 450 HP. STRAFE at
                10-16 m -> WINDUP 0.6 s -> BURST 3 green bolts (12 dmg).
                Interruptible windup; tail slam < 4 m (ring telegraph,
                15 dmg unless jumped). Enrage < 30 %: 5 bolts, cd 2.5 s.
-               Arena roof + side island (3.5 m jump); kill plane 10 dmg
-               + respawn. 4 thugs, 2 hostages, exit at full clear.
+               Main arena + east island + south island (6m sprint jump,
+               AC + vent + medkit + token); kill plane 10 dmg +
+               respawn covers all. 2 more AC covers, 3 vents, hut
+               beacon. 4 thugs, 2 hostages, exit at full clear.
+               4 spider-tokens (billboard + mast swing grabs, 2 islands).
 L6 Theater   (levels/theater/)  — abandoned theater vs MYSTERIO
                (enemies/mysterio.*): illusion boss, 500 HP, never walks.
                Teleports between 5 pedestals (7 s, 4.5 enraged) + 2-3
@@ -51,15 +62,22 @@ L6 Theater   (levels/theater/)  — abandoned theater vs MYSTERIO
                bolts, 10 dmg, interruptible 0.7 s windup) and hypno wave
                (r6 ring, 12 dmg, jump to dodge). Webs stagger 1 s.
                Coplanar stage, curtains, 24 seat-cover boxes, chandelier
-               + curtain swing anchors. 4 thugs, 2 hostages, exit
-               (stage door) at full clear. Next: L7 (path open).
+               + curtain swing anchors, east balcony (solid block top
+               y=4, ramp up from south, railings, projector, 2 tokens;
+               east gunner moved to (10,0,-2) to clear the block).
+               Deco: aisle carpet, 4 wall sconces, 2 posters. 4 thugs,
+               2 hostages, exit (stage door) at full clear.
+               4 spider-tokens (2 balcony, chandelier swing, curtain).
+               Next: L7 (path open).
+
+TOKEN TOTAL: 30 (L0x3 L1x5 L2x5 L3x5 L4x4 L5x4 L6x4).
 
 ART PASS 0 (procedural, no external assets) — DONE
 --------------------------------------------------
 Hero v2, thug rig + barks, FX pack, cinematic lighting, all boss anims,
 hostage variants, sky dressing. (Details in git history.)
 
-FEEL PASS 1 (characters & levels) — batches 1-4 DONE
+FEEL PASS 1 (characters & levels) — batches 1-5 DONE
 ------------------------------------------------
 Batch 1 (hero feel): dodge dash (C / RB) + PERFECT DODGE slow-mo,
 hit-stop on connects (generation-guarded), web yank (Q / RS).
@@ -67,13 +85,14 @@ Batch 2 (Hero v3 + air game): v3 look, launcher (Shift+attack), air
 juggles, finishers vs stagger/stun, ground slam (S+attack mid-air).
 Batch 3 (Thug v2 + life + verification): rig variants (melee/gunner/
 bruiser), civilians, gd_verify.py (10 checks, gates every commit).
-Batch 4 (L0-L2 widen + tokens): training freerun annex + dirt;
-bank records annex + trim/bars/cash/crates; docks east pier + lamps
-+ ship backdrop + 5th barrel. SpiderToken (code-built Area3D):
-spinning gold coin + red gem, r1.5 grab, +100 score, global #N via
-Game.tokens_found, sparkle + HUD flash. 13 tokens: L0 x3, L1 x5,
-L2 x5. Annexes hold zero enemies (gating counts untouched).
-Next: L3-L6 widen + tokens.
+Batch 4 (L0-L2 widen + tokens): training annex, bank annex, docks
+east pier; SpiderToken system (Game.tokens_found, +100, global #N).
+Batch 5 (L3-L6 widen + tokens): bugle alley + rug/papers/shelf;
+streets plaza (police line shifted) + crosswalks/newsstand/hydrants
++ 2 civilians; roofs south island (6m jump) + AC/vents/beacon;
+theater balcony (solid + ramp, gunner moved) + carpet/sconces/
+posters. 17 tokens (30 total). Zero gating-count changes.
+Next: procedural texture pass (buildings/ground detail, code-only).
 
 SHARED SYSTEMS
 --------------
@@ -155,11 +174,16 @@ GOTCHAS
 - collision_layer = 0 is a valid ghost (detected by nothing); the mask
   still drives move_and_slide (civilian: layer 0 / mask 1).
 - Annex/side areas must hold ZERO enemies unless gating counts are
-  updated too (bank annex, training pad are enemy-free by design).
+  updated too (all 6 annexes/piers/plazas are enemy-free by design).
 - Thug rig variant reads scale.x in _ready: set scale BEFORE add_child
   (docks bruiser was post-add and silently missed bruiser styling).
+- Rotated-box ramps: bury the low edge in the floor, land the top edge
+  coplanar-or-buried in the platform (bugle landings, theater balcony).
+- 6m roof gaps need full sprint jumps (7.5 v0 + 9.5 run ~ 6.5m range);
+  never widen jump gaps past 6m without a swing anchor nearby.
 
 NEXT
 ----
-Feel Pass 1 batch 5: L3-L6 widen + tokens.
+Feel Pass 1 batch 6: procedural texture pass (window grids, asphalt,
+concrete noise via shaders/decals - code-only, no user files needed).
 Then: traffic + time trials + breakables. L7 DocOck after.

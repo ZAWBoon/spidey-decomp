@@ -1,8 +1,9 @@
 class_name RoofsLevel
 extends LevelBase
 ## Level 5: night rooftops vs SCORPION. Main arena roof (cover AC units,
-## water tower, billboard) + a side roof island 3.5 m east holding a
-## hostage and pickups - fall and the kill plane costs 10 HP + respawn.
+## water tower, billboard) + an east island and a south island holding
+## pickups - fall and the kill plane costs 10 HP + respawn.
+## 4 spider-tokens (2 swing grabs, 2 island grabs).
 
 const THUG_SCENE: PackedScene = preload("res://enemies/thug.tscn")
 const SCORPION_SCENE: PackedScene = preload("res://enemies/scorpion.tscn")
@@ -24,6 +25,7 @@ func _build() -> void:
 	next_level_path = "res://levels/theater/theater.tscn"
 	_build_main_roof()
 	_build_side_roof()
+	_build_south_roof()
 	_build_props()
 	_build_actors()
 	Game.set_objective("Cross the roofs - take down Scorpion!")
@@ -36,7 +38,9 @@ func _build_main_roof() -> void:
 		Color(0.15, 0.15, 0.18))
 	var lip := Color(0.4, 0.4, 0.42)
 	Blockout.box(self, Vector3(0, 0.5, -21.5), Vector3(44, 1, 1), lip)
-	Blockout.box(self, Vector3(0, 0.5, 21.5), Vector3(44, 1, 1), lip)
+	# South lip split: jump gap at x in [-2, 2].
+	Blockout.box(self, Vector3(-12, 0.5, 21.5), Vector3(20, 1, 1), lip)
+	Blockout.box(self, Vector3(12, 0.5, 21.5), Vector3(20, 1, 1), lip)
 	Blockout.box(self, Vector3(-21.5, 0.5, 0), Vector3(1, 1, 44), lip)
 	# East lip split: jump gap at z in [-2, 2].
 	Blockout.box(self, Vector3(22, 0.5, -12), Vector3(1, 1, 20), lip)
@@ -72,15 +76,37 @@ func _build_side_roof() -> void:
 		Color(0.45, 0.35, 0.22))
 
 
+func _build_south_roof() -> void:
+	# South island (z 28..48): 6m sprint-jump from the main roof.
+	Blockout.box(self, Vector3(0, -0.5, 38), Vector3(20, 1, 20),
+		Color(0.3, 0.3, 0.32))
+	Blockout.box(self, Vector3(0, -16, 38), Vector3(20, 30, 20),
+		Color(0.13, 0.13, 0.16))
+	var lip := Color(0.38, 0.38, 0.4)
+	Blockout.box(self, Vector3(-6, 0.5, 28.5), Vector3(8, 1, 1), lip)
+	Blockout.box(self, Vector3(6, 0.5, 28.5), Vector3(8, 1, 1), lip)
+	Blockout.box(self, Vector3(0, 0.5, 47.5), Vector3(20, 1, 1), lip)
+	Blockout.box(self, Vector3(-9.5, 0.5, 38), Vector3(1, 1, 20), lip)
+	Blockout.box(self, Vector3(9.5, 0.5, 38), Vector3(1, 1, 20), lip)
+	Blockout.box(self, Vector3(5, 0.6, 42), Vector3(2, 1.2, 1.5),
+		Color(0.5, 0.55, 0.6))
+	Blockout.cylinder(self, Vector3(-5, 0.75, 40), 0.4, 1.5,
+		Color(0.5, 0.55, 0.6))
+	_spawn_pickup(HEALTH_SCENE, Vector3(-5, 0, 34))
+	_spawn_token(Vector3(0, 1.2, 38))
+
+
 func _build_props() -> void:
 	# AC units: bolt cover.
 	var ac := Color(0.5, 0.55, 0.6)
 	var fan := Color(0.15, 0.15, 0.17)
 	for pos in [Vector3(-12, 0, -5), Vector3(12, 0, -5), Vector3(-8, 0, 8),
-			Vector3(8, 0, 8), Vector3(-15, 0, 2), Vector3(15, 0, -12)]:
+			Vector3(8, 0, 8), Vector3(-15, 0, 2), Vector3(15, 0, -12),
+			Vector3(0, 0, 4), Vector3(-5, 0, -10)]:
 		Blockout.box(self, pos + Vector3(0, 0.6, 0), Vector3(2, 1.2, 1.5), ac)
 		Blockout.cylinder(self, pos + Vector3(0, 1.25, 0), 0.5, 0.1, fan, false)
-	for pos in [Vector3(-5, 0, -12), Vector3(5, 0, 14), Vector3(-18, 0, -15)]:
+	for pos in [Vector3(-5, 0, -12), Vector3(5, 0, 14), Vector3(-18, 0, -15),
+			Vector3(10, 0, -14), Vector3(-14, 0, 10), Vector3(5, 0, -18)]:
 		Blockout.cylinder(self, pos + Vector3(0, 0.75, 0), 0.4, 1.5, ac)
 	# Water tower.
 	var wood := Color(0.42, 0.3, 0.18)
@@ -101,11 +127,14 @@ func _build_props() -> void:
 	var beacon := Blockout.sphere(self, Vector3(18, 12.2, 16), 0.3, Color(1, 0.1, 0.1))
 	beacon.material_override = Blockout.mat_emissive(Color(1, 0.1, 0.1), 3.0)
 	_swing_anchor(Vector3(18, 12.4, 16))
-	# Stairwell hut + door.
+	# Stairwell hut + door + beacon.
 	Blockout.box(self, Vector3(0, 1.25, -17), Vector3(4, 2.5, 3.5),
 		Color(0.36, 0.36, 0.38))
 	Blockout.box(self, Vector3(0, 1.0, -15.2), Vector3(1.4, 2.0, 0.2),
 		Color(0.08, 0.08, 0.1), false)
+	var hut_lamp := Blockout.sphere(self, Vector3(0, 2.8, -17), 0.18,
+		Color(1, 0.15, 0.1))
+	hut_lamp.material_override = Blockout.mat_emissive(Color(1, 0.15, 0.1), 2.0)
 	Blockout.omni(self, Vector3(0, 4, 5), Color(1, 0.9, 0.75), 1.2, 16.0)
 	Blockout.omni(self, Vector3(0, 3, -14), Color(1, 0.85, 0.65), 1.0, 12.0)
 
@@ -127,6 +156,9 @@ func _build_actors() -> void:
 	_spawn_pickup(HEALTH_SCENE, Vector3(SIDE_X, 0, -4))
 	_spawn_pickup(WEB_SCENE, Vector3(-18, 0, -8))
 	_spawn_pickup(WEB_SCENE, Vector3(SIDE_X + 3, 0, 6))
+	_spawn_token(Vector3(0, 8.0, -17))
+	_spawn_token(Vector3(17, 9.0, 16))
+	_spawn_token(Vector3(SIDE_X + 6, 1.2, 3))
 	_scorpion = SCORPION_SCENE.instantiate() as Scorpion
 	add_child(_scorpion)
 	_scorpion.global_position = Vector3(0, 0, -8)
@@ -168,6 +200,12 @@ func _spawn_pickup(scene: PackedScene, pos: Vector3) -> void:
 	pickup.global_position = pos
 
 
+func _spawn_token(pos: Vector3) -> void:
+	var token := SpiderToken.new()
+	add_child(token)
+	token.global_position = pos
+
+
 func _on_arena_entered(body: Node3D) -> void:
 	if body.is_in_group("player") and _scorpion != null:
 		_scorpion.activate()
@@ -192,6 +230,6 @@ func _on_scorpion_downed() -> void:
 
 func _on_actor_event() -> void:
 	if _exit != null and enemies_down >= enemies_total \
-			and hostages_saved >= hostages_total:
+		and hostages_saved >= hostages_total:
 		_exit.unlock()
 		Game.set_objective("Escape through the EXIT!")

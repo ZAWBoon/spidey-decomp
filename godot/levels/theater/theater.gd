@@ -2,7 +2,8 @@ class_name TheaterLevel
 extends LevelBase
 ## Level 6: abandoned theater vs MYSTERIO. Coplanar stage (no steps!),
 ## curtain backdrop, 24 velvet seats as bolt cover, chandelier swing
-## anchor, 5 glowing pedestals the boss teleports between.
+## anchor, 5 glowing pedestals the boss teleports between. East balcony
+## (ramp up, projector, 2 tokens). 4 spider-tokens total.
 
 const THUG_SCENE: PackedScene = preload("res://enemies/thug.tscn")
 const MYSTERIO_SCENE: PackedScene = preload("res://enemies/mysterio.tscn")
@@ -21,6 +22,7 @@ func _build() -> void:
 	level_name = "Level 6: Theater"
 	next_level_path = ""
 	_build_hall()
+	_build_balcony()
 	_build_stage()
 	_build_seats()
 	_build_actors()
@@ -45,6 +47,65 @@ func _build_hall() -> void:
 	_swing_anchor(Vector3(0, 8.5, 5))
 	_swing_anchor(Vector3(-13, 8.2, -8))
 	_swing_anchor(Vector3(13, 8.2, -8))
+	# Aisle carpet + wall sconces + posters.
+	Blockout.box(self, Vector3(0, 0.02, 9), Vector3(2, 0.04, 18),
+		Color(0.45, 0.08, 0.1), false)
+	var warm := Color(1, 0.75, 0.45)
+	for pos in [Vector3(-19.3, 3.5, 0), Vector3(-19.3, 3.5, 10),
+			Vector3(19.3, 3.5, 0), Vector3(19.3, 3.5, 10)]:
+		var lamp := Blockout.sphere(self, pos, 0.15, warm)
+		lamp.material_override = Blockout.mat_emissive(warm, 2.0)
+	Blockout.box(self, Vector3(-8, 3, 19.4), Vector3(3, 4, 0.1),
+		Color(0.7, 0.5, 0.15), false)
+	Blockout.box(self, Vector3(8, 3, 19.4), Vector3(3, 4, 0.1),
+		Color(0.4, 0.2, 0.6), false)
+	Blockout.label(self, Vector3(0, 5.5, 19.4), "NOW SHOWING", Color(1, 0.85, 0.5), 48)
+
+
+func _build_balcony() -> void:
+	# East balcony: solid block (top y=4) + ramp up from the south.
+	# CharacterBody can't step, so the ramp top lands coplanar (y=4).
+	Blockout.box(self, Vector3(16.5, 1.75, 5), Vector3(5, 4.5, 22),
+		Color(0.3, 0.16, 0.16))
+	_ramp(Vector3(16.5, 2, 9), 3.0, 14.0, 4.0, 0.0, 4.0)
+	Blockout.box(self, Vector3(13.8, 4.5, 5), Vector3(0.3, 1, 22),
+		Color(0.6, 0.45, 0.12))
+	Blockout.box(self, Vector3(16.5, 4.5, -6), Vector3(5, 1, 0.3),
+		Color(0.6, 0.45, 0.12))
+	# Projector + tokens.
+	Blockout.box(self, Vector3(16.5, 4.6, 14), Vector3(1, 0.6, 1.2),
+		Color(0.1, 0.1, 0.12))
+	var lens := Blockout.sphere(self, Vector3(15.8, 4.6, 14), 0.12,
+		Color(0.8, 0.9, 1.0))
+	lens.material_override = Blockout.mat_emissive(Color(0.8, 0.9, 1.0), 2.5)
+	Blockout.label(self, Vector3(16.5, 5.8, 14), "PROJECTOR", Color(0.7, 0.8, 1.0), 40)
+	_spawn_token(Vector3(16.5, 5.2, 12))
+	_spawn_token(Vector3(16.5, 5.2, -2))
+
+
+## Sloped walkway, +Z/low to -Z/high (same math as the Bugle ramps).
+func _ramp(center: Vector3, width: float, z_from: float, z_to: float,
+		y_from: float, y_to: float) -> void:
+	var run := absf(z_to - z_from)
+	var rise := y_to - y_from
+	var length := sqrt(run * run + rise * rise) + 1.0
+	var body := StaticBody3D.new()
+	body.collision_layer = 1
+	body.collision_mask = 0
+	var mi := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(width, 0.5, length)
+	mi.mesh = mesh
+	mi.material_override = Blockout.mat(Color(0.35, 0.2, 0.2))
+	var cs := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(width, 0.5, length)
+	cs.shape = shape
+	body.add_child(mi)
+	body.add_child(cs)
+	add_child(body)
+	body.global_position = center
+	body.rotation.x = atan2(rise, run)
 
 
 func _swing_anchor(pos: Vector3) -> void:
@@ -90,9 +151,11 @@ func _build_actors() -> void:
 	_spawn_patrol(Vector3(-5, 0, 12), [Vector3(-5, 0, 12), Vector3(5, 0, 12)])
 	_spawn_patrol(Vector3(5, 0, 16), [Vector3(5, 0, 16), Vector3(-5, 0, 16)])
 	_spawn_thug(Vector3(-17, 0, 0), true)
-	_spawn_thug(Vector3(17, 0, 0), true)
+	_spawn_thug(Vector3(10, 0, -2), true)
 	_spawn_hostage(Vector3(-14, 0, 8))
 	_spawn_hostage(Vector3(14, 0, 4))
+	_spawn_token(Vector3(0, 7.0, 5))
+	_spawn_token(Vector3(13, 1.2, -6))
 	_spawn_pickup(HEALTH_SCENE, Vector3(10, 0, 18))
 	_spawn_pickup(HEALTH_SCENE, Vector3(-10, 0, -2))
 	_spawn_pickup(WEB_SCENE, Vector3(-4, 0, 4))
@@ -141,6 +204,12 @@ func _spawn_pickup(scene: PackedScene, pos: Vector3) -> void:
 	pickup.global_position = pos
 
 
+func _spawn_token(pos: Vector3) -> void:
+	var token := SpiderToken.new()
+	add_child(token)
+	token.global_position = pos
+
+
 func _on_arena_entered(body: Node3D) -> void:
 	if body.is_in_group("player") and _mysterio != null:
 		_mysterio.activate()
@@ -157,6 +226,6 @@ func _on_mysterio_downed() -> void:
 
 func _on_actor_event() -> void:
 	if _exit != null and enemies_down >= enemies_total \
-			and hostages_saved >= hostages_total:
+		and hostages_saved >= hostages_total:
 		_exit.unlock()
 		Game.set_objective("Escape through the EXIT!")

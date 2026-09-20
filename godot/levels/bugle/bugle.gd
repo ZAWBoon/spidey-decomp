@@ -2,6 +2,7 @@ class_name BugleLevel
 extends LevelBase
 ## Level 3: Daily Bugle at night. Climb lobby -> newsroom -> JJJ offices
 ## -> roof. Entering floor 2 drops Venom: an unkillable chaser. Run.
+## West alley annex (dumpsters, car, token). 5 spider-tokens total.
 
 const THUG_SCENE: PackedScene = preload("res://enemies/thug.tscn")
 const VENOM_SCENE: PackedScene = preload("res://enemies/venom.tscn")
@@ -22,6 +23,7 @@ func _build() -> void:
 	level_name = "Level 3: Bugle"
 	next_level_path = "res://levels/streets/streets.tscn"
 	_build_street()
+	_build_alley()
 	_build_shell()
 	_build_floors()
 	_build_ramps()
@@ -33,7 +35,9 @@ func _build_street() -> void:
 	Blockout.box(self, Vector3(0, -0.5, 40), Vector3(60, 1, 40), Color(0.16, 0.16, 0.2))
 	var fence := Color(0.35, 0.35, 0.4)
 	Blockout.box(self, Vector3(0, 1.5, 60), Vector3(60, 3, 1), fence)
-	Blockout.box(self, Vector3(-30, 1.5, 40), Vector3(1, 3, 40), fence)
+	# West fence split: 6m gap (z 38..44) into the alley.
+	Blockout.box(self, Vector3(-30, 1.5, 29), Vector3(1, 3, 18), fence)
+	Blockout.box(self, Vector3(-30, 1.5, 52), Vector3(1, 3, 16), fence)
 	Blockout.box(self, Vector3(30, 1.5, 40), Vector3(1, 3, 40), fence)
 	for spot in [Vector3(-20, 0, 35), Vector3(20, 0, 35)]:
 		Blockout.cylinder(self, spot + Vector3(0, 5.5, 0), 0.3, 11.0,
@@ -43,6 +47,32 @@ func _build_street() -> void:
 		anchor.global_position = spot + Vector3(0, 11, 0)
 		Blockout.omni(self, spot + Vector3(0, 9, 0), Color(0.6, 0.75, 1.0), 1.5, 16.0)
 	Blockout.label(self, Vector3(0, 8, 50), "DAILY BUGLE - NIGHT", Color(0.7, 0.85, 1.0), 96)
+	_spawn_token(Vector3(-20, 1.2, 28))
+
+
+func _build_alley() -> void:
+	# West service alley (x -50..-30), enemy-free side pocket.
+	Blockout.box(self, Vector3(-40, -0.5, 40), Vector3(20, 1, 40), Color(0.13, 0.13, 0.16))
+	var fence := Color(0.35, 0.35, 0.4)
+	Blockout.box(self, Vector3(-40, 1.5, 60), Vector3(20, 3, 1), fence)
+	Blockout.box(self, Vector3(-50, 1.5, 40), Vector3(1, 3, 40), fence)
+	Blockout.box(self, Vector3(-40, 1.5, 20), Vector3(20, 3, 1), fence)
+	var dump := Color(0.12, 0.3, 0.14)
+	Blockout.box(self, Vector3(-45, 0.75, 45), Vector3(3, 1.5, 2), dump)
+	Blockout.box(self, Vector3(-45, 0.75, 49), Vector3(3, 1.5, 2), dump)
+	_spawn_car(Vector3(-38, 0, 34), 0.0, Color(0.1, 0.15, 0.3))
+	Blockout.box(self, Vector3(-33, 0.6, 26), Vector3(1.2, 1.2, 0.8), Color(0.2, 0.3, 0.6))
+	Blockout.label(self, Vector3(-33, 2.0, 26), "NEWS", Color(0.8, 0.9, 1.0), 32)
+	_spawn_pickup(WEB_SCENE, Vector3(-36, 0, 32))
+	_spawn_token(Vector3(-44, 1.2, 52))
+
+
+func _spawn_car(pos: Vector3, yaw: float, paint: Color) -> void:
+	var car := Car.new()
+	car.paint = paint
+	add_child(car)
+	car.global_position = pos
+	car.rotation.y = yaw
 
 
 func _build_shell() -> void:
@@ -126,6 +156,8 @@ func _landing(center: Vector3) -> void:
 func _build_actors() -> void:
 	# Floor 1: lobby.
 	Blockout.box(self, Vector3(-5, 0.6, 8), Vector3(6, 1.2, 2), Color(0.35, 0.25, 0.15))
+	Blockout.box(self, Vector3(0, 0.02, 0), Vector3(8, 0.04, 12),
+		Color(0.4, 0.08, 0.1), false)
 	for pos in [Vector3(-8, 0, 5), Vector3(8, 0, -5)]:
 		Blockout.cylinder(self, pos + Vector3(0, 2, 0), 0.5, 4.0, Color(0.6, 0.58, 0.5))
 	_spawn_thug(Vector3(-8, 0, 0), false)
@@ -138,18 +170,27 @@ func _build_actors() -> void:
 			Color(0.55, 0.55, 0.6))
 		Blockout.box(self, pos + Vector3(0, 0.5, 1.2), Vector3(2.4, 1, 1),
 			Color(0.4, 0.32, 0.22))
+		Blockout.box(self, Vector3(pos.x, 6.05, 3.2), Vector3(1.2, 0.1, 0.8),
+			Color(0.9, 0.88, 0.82), false)
 	_spawn_thug(Vector3(-5, 5, -5), false)
 	_spawn_thug(Vector3(5, 5, 5), true)
 	_spawn_hostage(Vector3(-10, 5, 10))
 	_spawn_pickup(HEALTH_SCENE, Vector3(-8, 5, 8))
+	_spawn_token(Vector3(-12, 6.2, -12))
 	# Floor 3: JJJ offices.
 	Blockout.box(self, Vector3(0, 10.5, -10), Vector3(4, 1, 2), Color(0.3, 0.2, 0.12))
 	Blockout.label(self, Vector3(0, 12.4, -10), "J. JONAH JAMESON", Color(1, 0.85, 0.5), 48)
+	Blockout.box(self, Vector3(-8, 10.75, -12), Vector3(3, 1.5, 1), Color(0.35, 0.25, 0.15))
+	for i in 3:
+		Blockout.box(self, Vector3(-8.8 + i * 0.8, 11.7, -12), Vector3(0.5, 0.5, 0.7),
+			[Color(0.7, 0.2, 0.2), Color(0.2, 0.4, 0.7), Color(0.2, 0.6, 0.3)][i], false)
 	_spawn_thug(Vector3(0, 10, 5), false)
 	_spawn_thug(Vector3(-5, 10, -5), true)
 	_spawn_hostage(Vector3(10, 10, 10))
 	_spawn_pickup(WEB_SCENE, Vector3(8, 10, -5))
+	_spawn_token(Vector3(0, 11.2, -7))
 	# Roof exit + dormant Venom.
+	_spawn_token(Vector3(3, 16.2, -12))
 	_exit = EXIT_SCENE.instantiate() as ExitGate
 	add_child(_exit)
 	_exit.global_position = Vector3(0, 15, -8)
@@ -178,6 +219,12 @@ func _spawn_pickup(scene: PackedScene, pos: Vector3) -> void:
 	var pickup := scene.instantiate() as Area3D
 	add_child(pickup)
 	pickup.global_position = pos
+
+
+func _spawn_token(pos: Vector3) -> void:
+	var token := SpiderToken.new()
+	add_child(token)
+	token.global_position = pos
 
 
 func _process(delta: float) -> void:
